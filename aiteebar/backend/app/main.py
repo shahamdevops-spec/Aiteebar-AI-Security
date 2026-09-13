@@ -20,7 +20,7 @@ from app.exceptions import (
     create_error_response,
     DatabaseError,
 )
-from app.routers import auth, dashboard, applications, risk, dlp, threats, risk_score
+from app.routers import auth, dashboard, applications, risk, dlp, threats, risk_score, policies
 
 # Configure logging
 logging.basicConfig(
@@ -294,6 +294,9 @@ app.include_router(threats.router)
 
 # Risk Scoring routes
 app.include_router(risk_score.router)
+
+# Policy Management routes
+app.include_router(policies.router)
 
 # ============================================================================
 # APPLICATION ENTRY POINT

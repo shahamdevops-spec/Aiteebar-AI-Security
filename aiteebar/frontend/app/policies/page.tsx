@@ -1,87 +1,75 @@
-'use client'
+﻿'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
-import { Badge } from '@/components/Badge'
-import { Table } from '@/components/Table'
 
 interface Policy {
   id: string
   name: string
-  status: 'active' | 'inactive'
-  applications: number
-  violations: number
+  description?: string
+  action: 'ALLOW' | 'WARN' | 'REQUIRE_APPROVAL' | 'BLOCK'
+  priority: number
+  enabled: boolean
+  created_at: string
 }
 
+const ACTIONS = [
+  { value: 'ALLOW', label: 'Allow', color: 'bg-green-100' },
+  { value: 'WARN', label: 'Warn', color: 'bg-yellow-100' },
+  { value: 'REQUIRE_APPROVAL', label: 'Require Approval', color: 'bg-blue-100' },
+  { value: 'BLOCK', label: 'Block', color: 'bg-red-100' },
+]
+
 export default function PoliciesPage() {
-  const policies: Policy[] = [
-    {
-      id: '1',
-      name: 'API Rate Limiting Policy',
-      status: 'active',
-      applications: 8,
-      violations: 3,
-    },
-    {
-      id: '2',
-      name: 'Data Encryption Policy',
-      status: 'active',
-      applications: 12,
-      violations: 0,
-    },
-    {
-      id: '3',
-      name: 'Access Control Policy',
-      status: 'active',
-      applications: 15,
-      violations: 2,
-    },
-    {
-      id: '4',
-      name: 'Audit Logging Policy',
-      status: 'inactive',
-      applications: 5,
-      violations: 0,
-    },
-  ]
+  const [policies, setPolicies] = useState<Policy[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchPolicies()
+  }, [])
+
+  const fetchPolicies = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/api/policies')
+      setPolicies(response.data)
+    } catch (error) {
+      console.error('Failed to fetch policies:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50 p-8">
       <PageHeader
         title="Security Policies"
-        description="Define and manage security policies."
-        backHref="/dashboard"
+        subtitle="Define and enforce security policies for data protection"
       />
 
-      <Card title="Active Policies">
-        <Table<Policy>
-          columns={[
-            { key: 'name', label: 'Policy Name' },
-            {
-              key: 'status',
-              label: 'Status',
-              render: (status) => <Badge variant={status}>{status}</Badge>,
-            },
-            {
-              key: 'applications',
-              label: 'Applications',
-              render: (count) => <span className="text-slate-300">{count}</span>,
-            },
-            {
-              key: 'violations',
-              label: 'Violations',
-              render: (count) => (
-                <span className={count > 0 ? 'text-red-400' : 'text-green-400'}>
-                  {count}
-                </span>
-              ),
-            },
-          ]}
-          data={policies}
-          rowKey="id"
-        />
-      </Card>
+      <div className="max-w-7xl mx-auto mt-8">
+        <button className="mb-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          + Create Policy
+        </button>
+
+        <div className="space-y-4">
+          {loading ? (
+            <p>Loading policies...</p>
+          ) : policies.length === 0 ? (
+            <Card>
+              <p className="text-center text-gray-500 py-8">No policies configured</p>
+            </Card>
+          ) : (
+            policies.map(policy => (
+              <Card key={policy.id} className="p-6">
+                <h3 className="text-xl font-bold">{policy.name}</h3>
+                <span className="text-sm font-medium">{policy.action}</span>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   )
 }

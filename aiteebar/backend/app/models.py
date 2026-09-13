@@ -92,6 +92,14 @@ class ActionTaken(str, Enum):
     BLOCKED = "BLOCKED"
 
 
+class PolicyAction(str, Enum):
+    """Policy enforcement actions"""
+    ALLOW = "ALLOW"
+    WARN = "WARN"
+    REQUIRE_APPROVAL = "REQUIRE_APPROVAL"
+    BLOCK = "BLOCK"
+
+
 class EventStatus(str, Enum):
     """Status of security events"""
     OPEN = "open"
@@ -400,7 +408,7 @@ class SecurityEvent(Base):
     agent = relationship("AIAgent", back_populates="security_events")
     application = relationship("AIApplication", back_populates="security_events")
     tool = relationship("MCPTool", back_populates="security_events")
-    policy_actions = relationship("PolicyAction", back_populates="event")
+    policy_executions = relationship("PolicyExecution", back_populates="event")
 
     __table_args__ = (
         Index("idx_security_events_risk_score", risk_score.desc()),
@@ -416,17 +424,17 @@ class SecurityEvent(Base):
 # ============================================================================
 
 class Policy(Base):
-    """Security policies"""
+    """Security policies for access control and data protection"""
     __tablename__ = "policies"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     created_by = Column(String(36), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
 
-    name = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False, index=True)
     description = Column(Text)
     enabled = Column(Boolean, default=True, nullable=False, index=True)
 
-    # Policy definition
+    # Policy definition - JSON with triggers and conditions
     condition = Column(JSON, nullable=False, default={})
     action = Column(SQLEnum(PolicyAction), nullable=False, index=True)
 
@@ -438,35 +446,47 @@ class Policy(Base):
 
     # Relationships
     created_by_user = relationship("User", back_populates="policies")
-    policy_actions = relationship("PolicyAction", back_populates="policy")
+    policy_executions = relationship("PolicyExecution", back_populates="policy")
+
+    __table_args__ = (
+        Index("idx_policies_enabled_priority", enabled.desc(), priority.asc()),
+    )
 
     def __repr__(self):
         return f"<Policy(id={self.id}, name={self.name}, action={self.action})>"
 
 
 # ============================================================================
-# 9. POLICY_ACTIONS MODEL
+# 9. POLICY_EXECUTIONS MODEL
 # ============================================================================
 
-class PolicyAction(Base):
-    """Policy execution tracking"""
-    __tablename__ = "policy_actions"
+class PolicyExecution(Base):
+    """Policy execution tracking and audit log"""
+    __tablename__ = "policy_executions"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     policy_id = Column(String(36), ForeignKey("policies.id", ondelete="CASCADE"), nullable=False, index=True)
     event_id = Column(String(36), ForeignKey("security_events.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    action_taken = Column(String(100), nullable=False)
+    action_taken = Column(SQLEnum(PolicyAction), nullable=False, index=True)
     executed_at = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
+
+    # Audit details
+    matched_conditions = Column(JSON, default={})
+    reasoning = Column(Text)
 
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
 
     # Relationships
-    policy = relationship("Policy", back_populates="policy_actions")
-    event = relationship("SecurityEvent", back_populates="policy_actions")
+    policy = relationship("Policy", back_populates="policy_executions")
+    event = relationship("SecurityEvent", back_populates="policy_executions")
+
+    __table_args__ = (
+        Index("idx_policy_executions_executed_at", executed_at.desc()),
+    )
 
     def __repr__(self):
-        return f"<PolicyAction(id={self.id}, action={self.action_taken})>"
+        return f"<PolicyExecution(id={self.id}, policy_id={self.policy_id}, action={self.action_taken})>"
 
 
 # ============================================================================
