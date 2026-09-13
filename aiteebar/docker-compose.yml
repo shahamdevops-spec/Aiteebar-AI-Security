@@ -2,113 +2,175 @@ version: '3.8'
 
 services:
   # PostgreSQL Database
-  db:
+  postgres:
     image: postgres:15-alpine
-    container_name: aiteebar-db
+    container_name: aiteebar-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-aiteebar}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aiteebar_password}
       POSTGRES_DB: ${POSTGRES_DB:-aiteebar_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database/init-db.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+      - ./database/seed-db.sh:/docker-entrypoint-initdb.d/02-seed.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiteebar}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiteebar} -d ${POSTGRES_DB:-aiteebar_db}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     networks:
       - aiteebar-network
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: aiteebar-redis
-    command: redis-server --appendonly yes
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - aiteebar-network
+    labels:
+      - "com.aiteebar.service=database"
 
   # FastAPI Backend
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: "3.11"
     container_name: aiteebar-backend
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-aiteebar}:${POSTGRES_PASSWORD:-aiteebar_password}@db:5432/${POSTGRES_DB:-aiteebar_db}
-      REDIS_URL: redis://redis:6379/0
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-super-secret-jwt-key-change-in-production}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aiteebar}:${POSTGRES_PASSWORD:-aiteebar_password}@postgres:5432/${POSTGRES_DB:-aiteebar_db}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-32-chars-min}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       BACKEND_DEBUG: ${BACKEND_DEBUG:-true}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
+      postgres:
         condition: service_healthy
     volumes:
       - ./backend:/app
+      - /app/__pycache__
     networks:
       - aiteebar-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    labels:
+      - "com.aiteebar.service=api"
 
   # Next.js Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development
     container_name: aiteebar-frontend
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000/api}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Aiteebar AI Security}
       NODE_ENV: ${NODE_ENV:-development}
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
     volumes:
       - ./frontend:/app
       - /app/node_modules
+      - /app/.next
     networks:
       - aiteebar-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 15s
+    restart: unless-stopped
+    labels:
+      - "com.aiteebar.service=web"
 
-  # Adminer (Database UI)
+  # Ollama AI Runtime (Optional - for AI model inference)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aiteebar-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+    networks:
+      - aiteebar-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    labels:
+      - "com.aiteebar.service=ai"
+    profiles:
+      - with-ollama
+
+  # Adminer (Database UI - Development only)
   adminer:
     image: adminer:latest
     container_name: aiteebar-adminer
     ports:
-      - "8080:8080"
+      - "${ADMINER_PORT:-8080}:8080"
     depends_on:
-      - db
+      - postgres
     networks:
       - aiteebar-network
+    restart: unless-stopped
+    labels:
+      - "com.aiteebar.service=db-ui"
+    profiles:
+      - with-adminer
+
+  # Redis Cache (Optional - for session management and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: aiteebar-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_password}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - aiteebar-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    labels:
+      - "com.aiteebar.service=cache"
+    profiles:
+      - with-redis
 
 volumes:
   postgres_data:
     driver: local
   redis_data:
     driver: local
+  ollama_data:
+    driver: local
 
 networks:
   aiteebar-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
