@@ -1,9 +1,38 @@
-import React from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { api } from '@/lib/api'
+import { MetricCard } from '@/components/MetricCard'
+import { RiskDistributionChart } from '@/components/RiskDistributionChart'
+import { ApplicationCategoriesChart } from '@/components/ApplicationCategoriesChart'
+import { RecentEventsTable } from '@/components/RecentEventsTable'
+import { RecentActivityTimeline } from '@/components/RecentActivityTimeline'
+import { TopRiskyAgentsTable } from '@/components/TopRiskyAgentsTable'
+import { TopRiskyApplicationsTable } from '@/components/TopRiskyApplicationsTable'
 import { Card } from '@/components/Card'
-import { Badge } from '@/components/Badge'
-import { RiskScore } from '@/components/RiskScore'
-import { Chart } from '@/components/Chart'
-import { Table } from '@/components/Table'
+
+interface Metrics {
+  total_applications: number
+  total_agents: number
+  mcp_connections: number
+  high_risk_applications: number
+  critical_agents: number
+  sensitive_data_events: number
+  blocked_actions: number
+}
+
+interface RiskData {
+  low: number
+  medium: number
+  high: number
+  critical: number
+}
+
+interface CategoryData {
+  category: string
+  count: number
+  risk_score: number
+}
 
 interface SecurityEvent {
   id: string
@@ -11,130 +40,196 @@ interface SecurityEvent {
   severity: 'low' | 'medium' | 'high' | 'critical'
   timestamp: string
   application: string
+  description?: string
 }
 
-const recentEvents: SecurityEvent[] = [
-  {
-    id: '1',
-    name: 'Suspicious Login Attempt',
-    severity: 'high',
-    timestamp: '2024-01-15T10:30:00Z',
-    application: 'ChatGPT Integration',
-  },
-  {
-    id: '2',
-    name: 'API Rate Limit Exceeded',
-    severity: 'medium',
-    timestamp: '2024-01-15T09:15:00Z',
-    application: 'Claude API',
-  },
-  {
-    id: '3',
-    name: 'Certificate Expiration Warning',
-    severity: 'medium',
-    timestamp: '2024-01-14T15:45:00Z',
-    application: 'Internal Service',
-  },
-  {
-    id: '4',
-    name: 'Malware Signature Detected',
-    severity: 'critical',
-    timestamp: '2024-01-14T12:20:00Z',
-    application: 'Gemini API',
-  },
-]
+interface Activity {
+  id: string
+  agent_name: string
+  action: string
+  status: string
+  timestamp: string
+  details?: string
+}
+
+interface Agent {
+  id: string
+  name: string
+  risk_score: number
+  status: string
+  application: string
+  last_activity?: string
+}
+
+interface Application {
+  id: string
+  name: string
+  risk_level: number
+  status: string
+  provider: string
+  agent_count: number
+}
 
 export default function DashboardPage() {
+  const [metrics, setMetrics] = useState<Metrics | null>(null)
+  const [riskData, setRiskData] = useState<RiskData | null>(null)
+  const [categories, setCategories] = useState<CategoryData[]>([])
+  const [events, setEvents] = useState<SecurityEvent[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [topAgents, setTopAgents] = useState<Agent[]>([])
+  const [topApplications, setTopApplications] = useState<Application[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchDashboardData()
+  }, [])
+
+  const fetchDashboardData = async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const [metricsRes, riskRes, catRes, eventsRes, actRes, agentsRes, appsRes] =
+        await Promise.all([
+          api.get('/v1/dashboard/metrics'),
+          api.get('/v1/dashboard/risk-distribution'),
+          api.get('/v1/dashboard/application-categories'),
+          api.get('/v1/dashboard/recent-events'),
+          api.get('/v1/dashboard/recent-activity'),
+          api.get('/v1/dashboard/top-risky-agents'),
+          api.get('/v1/dashboard/top-risky-applications'),
+        ])
+
+      setMetrics(metricsRes.data)
+      setRiskData(riskRes.data)
+      setCategories(catRes.data)
+      setEvents(eventsRes.data)
+      setActivities(actRes.data)
+      setTopAgents(agentsRes.data)
+      setTopApplications(appsRes.data)
+    } catch (err: any) {
+      console.error('Failed to fetch dashboard data:', err)
+      setError('Failed to load dashboard data. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (isLoading && !metrics) {
+    return (
+      <div className="space-y-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
+          <p className="text-slate-400 mt-2">Loading your security overview...</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-32 bg-slate-800 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
-        <p className="text-slate-400 mt-2">Welcome back! Here's your security overview.</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
+          <p className="text-slate-400 mt-2">Welcome back! Here's your security overview.</p>
+        </div>
+        <button
+          onClick={fetchDashboardData}
+          disabled={isLoading}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+        >
+          {isLoading ? 'Refreshing...' : '🔄 Refresh'}
+        </button>
       </div>
 
-      {/* Risk Scores Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="flex flex-col items-center justify-center py-8">
-          <RiskScore score={72} label="Overall Risk" size="lg" />
-        </Card>
-        <Card className="flex flex-col items-center justify-center py-8">
-          <RiskScore score={45} label="Application Risk" size="lg" />
-        </Card>
-        <Card className="flex flex-col items-center justify-center py-8">
-          <RiskScore score={88} label="API Risk" size="lg" />
-        </Card>
-        <Card className="flex flex-col items-center justify-center py-8">
-          <RiskScore score={32} label="Agent Risk" size="lg" />
-        </Card>
-      </div>
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-900/20 border border-red-700 text-red-400 rounded-lg">
+          {error}
+        </div>
+      )}
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-blue-400">24</div>
-            <div className="text-sm text-slate-400 mt-2">AI Applications</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-purple-400">15</div>
-            <div className="text-sm text-slate-400 mt-2">Active Agents</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-red-400">7</div>
-            <div className="text-sm text-slate-400 mt-2">Critical Events</div>
-          </div>
-        </Card>
-        <Card>
-          <div className="text-center">
-            <div className="text-3xl font-bold text-green-400">94%</div>
-            <div className="text-sm text-slate-400 mt-2">Policy Compliance</div>
-          </div>
-        </Card>
-      </div>
+      {/* Metrics Grid */}
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <MetricCard
+            label="AI Applications"
+            value={metrics.total_applications}
+            icon="🔧"
+            color="blue"
+          />
+          <MetricCard
+            label="Active Agents"
+            value={metrics.total_agents}
+            icon="🤖"
+            color="purple"
+          />
+          <MetricCard
+            label="High Risk Apps"
+            value={metrics.high_risk_applications}
+            icon="⚠️"
+            color="orange"
+          />
+          <MetricCard
+            label="Critical Agents"
+            value={metrics.critical_agents}
+            icon="🚨"
+            color="red"
+          />
+        </div>
+      )}
+
+      {/* Secondary Metrics */}
+      {metrics && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <MetricCard
+            label="MCP Connections"
+            value={metrics.mcp_connections}
+            icon="⚙️"
+            color="blue"
+          />
+          <MetricCard
+            label="Sensitive Data Events"
+            value={metrics.sensitive_data_events}
+            icon="🔐"
+            color="orange"
+          />
+          <MetricCard
+            label="Blocked Actions"
+            value={metrics.blocked_actions}
+            icon="🛑"
+            color="red"
+          />
+        </div>
+      )}
 
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Chart
-          title="Risk Timeline"
-          subtitle="Last 30 days"
-          height="h-80"
-        />
-        <Chart
-          title="Event Distribution"
-          subtitle="By severity level"
-          height="h-80"
-        />
+        {riskData && (
+          <RiskDistributionChart data={riskData} isLoading={isLoading} />
+        )}
+        {categories.length > 0 && (
+          <ApplicationCategoriesChart data={categories} isLoading={isLoading} />
+        )}
       </div>
 
-      {/* Recent Events */}
-      <Card title="Recent Security Events" subtitle="Last 24 hours">
-        <Table<SecurityEvent>
-          columns={[
-            { key: 'name', label: 'Event' },
-            {
-              key: 'severity',
-              label: 'Severity',
-              render: (severity) => <Badge variant={severity}>{severity.toUpperCase()}</Badge>,
-            },
-            { key: 'application', label: 'Application' },
-            {
-              key: 'timestamp',
-              label: 'Time',
-              render: (timestamp) => {
-                const date = new Date(timestamp)
-                return date.toLocaleTimeString()
-              },
-            },
-          ]}
-          data={recentEvents}
-          rowKey="id"
-        />
-      </Card>
+      {/* Tables Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <RecentEventsTable events={events} isLoading={isLoading} />
+        <RecentActivityTimeline activities={activities} isLoading={isLoading} />
+      </div>
+
+      {/* Top Risky Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TopRiskyAgentsTable agents={topAgents} isLoading={isLoading} />
+        <TopRiskyApplicationsTable applications={topApplications} isLoading={isLoading} />
+      </div>
     </div>
   )
 }
