@@ -134,7 +134,9 @@ async def get_application_categories(
         db.query(
             AIApplication.category,
             func.count(AIApplication.id).label("count"),
-            func.avg(AIApplication.risk_level).label("avg_risk"),
+            # Average the numeric score. Averaging the risk_level enum returns
+            # 0 on SQLite without erroring, which is wrong data, not an error.
+            func.avg(AIApplication.risk_score).label("avg_risk"),
         )
         .filter(AIApplication.category.isnot(None))
         .group_by(AIApplication.category)
@@ -169,14 +171,20 @@ async def get_recent_events(
         .all()
     )
 
+    # The relationship is `application`, not `ai_application`, and SecurityEvent
+    # has no `description` column. Both raised AttributeError and 500'd.
     return [
         {
             "id": str(event.id),
             "name": event.event_type,
-            "severity": event.severity,
+            "severity": event.severity.value if event.severity else None,
             "timestamp": event.created_at.isoformat(),
-            "application": event.ai_application.name if event.ai_application else "Unknown",
-            "description": event.description,
+            "application": event.application.name if event.application else "Unknown",
+            "agent": event.agent.name if event.agent else None,
+            "data_type": event.data_type,
+            "destination": event.destination,
+            "risk_score": float(event.risk_score or 0),
+            "action_taken": event.action_taken.value if event.action_taken else None,
         }
         for event in events
     ]
@@ -207,7 +215,10 @@ async def get_recent_activity(
             "action": activity.action_type,
             "status": activity.status,
             "timestamp": activity.created_at.isoformat(),
-            "details": activity.details,
+            # The column is `agent_metadata`; `details` does not exist.
+            "details": activity.agent_metadata or {},
+            "resource": activity.resource_name,
+            "risk_score": float(activity.risk_score or 0),
         }
         for activity in activities
     ]
@@ -231,13 +242,16 @@ async def get_top_risky_agents(
         .all()
     )
 
+    # risk_score is Decimal, which json cannot serialize, and the relationship
+    # is `application`, not `ai_application`.
     return [
         {
             "id": str(agent.id),
             "name": agent.name,
-            "risk_score": round(agent.risk_score, 1),
-            "status": agent.status,
-            "application": agent.ai_application.name if agent.ai_application else "Unknown",
+            "risk_score": round(float(agent.risk_score or 0), 1),
+            "risk_level": agent.risk_level.value if agent.risk_level else None,
+            "status": agent.status.value if agent.status else None,
+            "application": agent.application.name if agent.application else "Unknown",
             "last_activity": agent.last_activity.isoformat() if agent.last_activity else None,
         }
         for agent in agents
@@ -255,20 +269,25 @@ async def get_top_risky_applications(
 
     Returns list of applications with highest risk levels.
     """
+    # Order by the numeric risk_score. Ordering by the risk_level enum sorts
+    # alphabetically (CRITICAL, HIGH, LOW, MEDIUM), which is not risk order.
     applications = (
         db.query(AIApplication)
-        .order_by(AIApplication.risk_level.desc())
+        .order_by(AIApplication.risk_score.desc())
         .limit(limit)
         .all()
     )
 
+    # round() raised TypeError on the risk_level enum, AIApplication has no
+    # `status` column, and the vendor field is `vendor`, not `ai_provider`.
     return [
         {
             "id": str(app.id),
             "name": app.name,
-            "risk_level": round(app.risk_level, 1),
-            "status": app.status,
-            "provider": app.ai_provider or "Unknown",
+            "risk_score": round(float(app.risk_score or 0), 1),
+            "risk_level": app.risk_level.value if app.risk_level else None,
+            "category": app.category,
+            "provider": app.vendor or "Unknown",
             "agent_count": len(app.agents) if app.agents else 0,
         }
         for app in applications

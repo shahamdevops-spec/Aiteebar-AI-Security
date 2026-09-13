@@ -8,7 +8,20 @@ interface Activity {
   action: string
   status: string
   timestamp: string
-  details?: string
+  // agent_metadata is a JSON column, so this arrives as an object, not a
+  // string. Rendering it directly throws "Objects are not valid as a React
+  // child" and blanks the whole dashboard.
+  details?: string | Record<string, unknown> | null
+  resource?: string | null
+}
+
+/** Reduce whatever `details` holds to something renderable. */
+function summarise(details: Activity['details']): string {
+  if (!details) return ''
+  if (typeof details === 'string') return details
+  const entries = Object.entries(details)
+  if (entries.length === 0) return ''
+  return entries.map(([key, value]) => `${key}: ${String(value)}`).join(' · ')
 }
 
 interface RecentActivityTimelineProps {
@@ -75,8 +88,11 @@ export function RecentActivityTimeline({ activities, isLoading = false }: Recent
                   {activity.status}
                 </Badge>
               </div>
-              {activity.details && (
-                <p className="text-xs text-slate-500 mt-1 truncate">{activity.details}</p>
+              {activity.resource && (
+                <p className="text-xs text-slate-400 mt-1 truncate">{activity.resource}</p>
+              )}
+              {summarise(activity.details) && (
+                <p className="text-xs text-slate-500 mt-1 truncate">{summarise(activity.details)}</p>
               )}
               <p className="text-xs text-slate-500 mt-1">
                 {new Date(activity.timestamp).toLocaleString()}
