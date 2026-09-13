@@ -13,26 +13,26 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy.orm import Session
 from app.database import SessionLocal
 from app.models import User, UserRole
-from passlib.context import CryptContext
+from app.security import hash_password
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
+# These must stay in step with DEMO_CREDENTIALS in frontend/lib/constants.ts,
+# which is what the login page's demo buttons submit.
 DEMO_USERS = [
     {
         "email": "admin@aiteebar.ai",
-        "password": "admin123",
+        "password": "Admin@123",
         "name": "Admin User",
         "role": UserRole.ADMIN,
     },
     {
         "email": "analyst@aiteebar.ai",
-        "password": "analyst123",
+        "password": "Analyst@123",
         "name": "Analyst User",
         "role": UserRole.ANALYST,
     },
     {
         "email": "viewer@aiteebar.ai",
-        "password": "viewer123",
+        "password": "Viewer@123",
         "name": "Viewer User",
         "role": UserRole.VIEWER,
     },
@@ -40,39 +40,45 @@ DEMO_USERS = [
 
 
 def seed_users(db: Session):
-    """Seed demo users into the database."""
-    
-    # Check if users already exist
-    existing_count = db.query(User).count()
-    if existing_count > 0:
-        print(f"Database already contains {existing_count} users. Skipping seed.")
-        return
+    """
+    Create the demo users, or reset them to the credentials above if they
+    already exist. Only the three demo accounts are touched; any other user
+    in the database is left alone.
+    """
+    created = 0
+    updated = 0
 
-    users = []
     for user_data in DEMO_USERS:
-        password_hash = pwd_context.hash(user_data["password"])
-        user = User(
-            id=str(uuid.uuid4()),
-            email=user_data["email"],
-            password_hash=password_hash,
-            name=user_data["name"],
-            role=user_data["role"],
-            is_active=True,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-        )
-        users.append(user)
+        existing = db.query(User).filter(User.email == user_data["email"]).first()
 
-    db.add_all(users)
+        if existing:
+            existing.password_hash = hash_password(user_data["password"])
+            existing.name = user_data["name"]
+            existing.role = user_data["role"]
+            existing.is_active = True
+            existing.updated_at = datetime.utcnow()
+            updated += 1
+            print(f"  reset  {user_data['email']}")
+        else:
+            db.add(User(
+                id=str(uuid.uuid4()),
+                email=user_data["email"],
+                password_hash=hash_password(user_data["password"]),
+                name=user_data["name"],
+                role=user_data["role"],
+                is_active=True,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            ))
+            created += 1
+            print(f"  create {user_data['email']}")
+
     db.commit()
 
-    print(f"✓ Successfully seeded {len(users)} demo users!")
+    print(f"\n{created} created, {updated} reset.")
     print("\nDemo Credentials:")
     for user_data in DEMO_USERS:
-        print(f"  Email: {user_data['email']}")
-        print(f"  Password: {user_data['password']}")
-        print(f"  Role: {user_data['role'].value}")
-        print()
+        print(f"  {user_data['role'].value:8} {user_data['email']:24} {user_data['password']}")
 
 
 if __name__ == "__main__":

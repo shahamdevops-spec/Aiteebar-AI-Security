@@ -5,7 +5,7 @@ Provides password hashing with bcrypt and JWT token generation/validation.
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from passlib.context import CryptContext
+import bcrypt
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -19,15 +19,20 @@ logger = logging.getLogger(__name__)
 # PASSWORD HASHING
 # ============================================================================
 
-# Password hashing context with bcrypt
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=12,
-)
+BCRYPT_ROUNDS = 12
+
+# bcrypt hashes at most the first 72 bytes of a password and raises on longer
+# input. Existing hashes were produced from the raw password, so truncating
+# here reproduces exactly what they were built from and keeps them verifiable.
+BCRYPT_MAX_BYTES = 72
 
 # HTTP Bearer security scheme
 security = HTTPBearer()
+
+
+def _to_bcrypt_bytes(password: str) -> bytes:
+    """Encode a password to the byte form bcrypt accepts."""
+    return password.encode("utf-8")[:BCRYPT_MAX_BYTES]
 
 
 def hash_password(password: str) -> str:
@@ -40,7 +45,8 @@ def hash_password(password: str) -> str:
     Returns:
         str: Hashed password
     """
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
+    return bcrypt.hashpw(_to_bcrypt_bytes(password), salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -54,7 +60,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: True if password matches, False otherwise
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            _to_bcrypt_bytes(plain_password),
+            hashed_password.encode("utf-8"),
+        )
+    except (ValueError, TypeError):
+        # A malformed or truncated stored hash is an authentication failure,
+        # not a server error.
+        logger.warning("Stored password hash is not valid bcrypt")
+        return False
 
 # ============================================================================
 # JWT TOKEN HANDLING

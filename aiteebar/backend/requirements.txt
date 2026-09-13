@@ -17,9 +17,11 @@ pydantic==2.5.0
 pydantic-settings==2.1.0
 
 # Authentication & Security
+# passlib was dropped: 1.7.4 (last release 2020) probes for an old bcrypt bug
+# by hashing a >72-byte secret at import, which bcrypt 4.1+ rejects, breaking
+# every hash and verify. app/security.py calls bcrypt directly instead.
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-bcrypt==4.1.1
+bcrypt>=4.1
 
 # Environment Variables
 python-dotenv==1.0.0
