@@ -10,6 +10,13 @@ export default function Home() {
   const router = useRouter()
   const authenticated = isAuthenticated()
 
+  const handleLearnMore = () => {
+    const element = document.getElementById('features-section')
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   useEffect(() => {
     if (authenticated) {
       router.push('/dashboard')
@@ -62,7 +69,10 @@ export default function Home() {
             >
               Get Started
             </Link>
-            <button className="px-8 py-3 border border-blue-500 text-blue-400 hover:bg-blue-950 rounded-lg font-semibold">
+            <button
+              onClick={handleLearnMore}
+              className="px-8 py-3 border border-blue-500 text-blue-400 hover:bg-blue-950 rounded-lg font-semibold cursor-pointer transition-colors"
+            >
               Learn More
             </button>
           </div>
@@ -70,7 +80,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-slate-800 py-20">
+      <section id="features-section" className="bg-slate-800 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h3 className="text-3xl font-bold mb-12 text-center">Key Features</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
