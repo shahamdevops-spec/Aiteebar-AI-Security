@@ -11,6 +11,7 @@ from decimal import Decimal
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from app.database import SessionLocal, engine
 from app.models import AIApplication, RiskLevel, Base
 import uuid
