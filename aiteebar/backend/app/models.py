@@ -543,3 +543,48 @@ class RiskAssessment(Base):
 
     def __repr__(self):
         return f"<RiskAssessment(id={self.id}, entity_type={self.entity_type}, score={self.overall_score})>"
+
+
+# ============================================================================
+# 12. THREAT_DETECTIONS MODEL
+# ============================================================================
+
+class ThreatDetection(Base):
+    """Threat detection results from rule-based engine"""
+    __tablename__ = "threat_detections"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    timestamp = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
+
+    # Threat Classification
+    threat_type = Column(String(100), nullable=False, index=True)
+    severity = Column(SQLEnum(EventSeverity), default=EventSeverity.MEDIUM, nullable=False, index=True)
+
+    risk_score = Column(Numeric(5, 2), default=0, index=True)
+    confidence = Column(Numeric(5, 2), default=0)
+
+    description = Column(Text, nullable=False)
+    evidence = Column(JSON, default={})
+    affected_resources = Column(JSON, default=[])
+
+    recommended_action = Column(Text)
+    resolved = Column(Boolean, default=False, nullable=False, index=True)
+
+    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
+
+    # Relationships
+    agent = relationship("AIAgent", backref="threat_detections")
+
+    __table_args__ = (
+        CheckConstraint("risk_score >= 0 AND risk_score <= 100"),
+        CheckConstraint("confidence >= 0 AND confidence <= 100"),
+        Index("idx_threat_detections_severity", severity.desc()),
+        Index("idx_threat_detections_risk_score", risk_score.desc()),
+        Index("idx_threat_detections_created_at", created_at.desc()),
+    )
+
+    def __repr__(self):
+        return f"<ThreatDetection(id={self.id}, agent_id={self.agent_id}, threat_type={self.threat_type}, severity={self.severity})>"
