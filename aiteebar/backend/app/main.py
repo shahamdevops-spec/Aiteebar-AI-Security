@@ -20,6 +20,7 @@ from app.exceptions import (
     create_error_response,
     DatabaseError,
 )
+from app.routers import auth
 
 # Configure logging
 logging.basicConfig(
@@ -273,10 +274,13 @@ async def root():
     }
 
 # ============================================================================
-# ROUTE REGISTRATION (TODO: Add as routes are created)
+# ROUTE REGISTRATION
 # ============================================================================
 
-# Example placeholder for future route registration:
+# Authentication routes
+app.include_router(auth.router)
+
+# TODO: Add as routes are created
 # from app.routers import users, applications, agents, security_events
 # app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 # app.include_router(applications.router, prefix="/api/v1/applications", tags=["applications"])
