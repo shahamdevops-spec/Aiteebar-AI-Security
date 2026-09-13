@@ -20,7 +20,7 @@ from app.exceptions import (
     create_error_response,
     DatabaseError,
 )
-from app.routers import auth
+from app.routers import auth, dashboard
 
 # Configure logging
 logging.basicConfig(
@@ -279,6 +279,9 @@ async def root():
 
 # Authentication routes
 app.include_router(auth.router)
+
+# Dashboard routes
+app.include_router(dashboard.router)
 
 # TODO: Add as routes are created
 # from app.routers import users, applications, agents, security_events
