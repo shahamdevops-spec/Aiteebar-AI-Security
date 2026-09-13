@@ -1,373 +1,226 @@
-# Aiteebar AI Security - Architecture Documentation
+# Architecture
 
-## System Overview
+How Aiteebar is put together, and why.
 
-Aiteebar AI Security is a production-ready platform designed to provide AI-powered security analysis and threat intelligence. The system is built on a modern, scalable microservices architecture with clear separation of concerns.
+---
 
-## System Architecture Diagram
+## Shape
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Client Layer                              │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐  │
-│  │  Web Browser     │  │  Mobile App      │  │  CLI Tools   │  │
-│  │  (Next.js React) │  │  (React Native)  │  │  (Python)    │  │
-│  └────────┬─────────┘  └────────┬─────────┘  └──────┬───────┘  │
-│           │                      │                    │           │
-└───────────┼──────────────────────┼────────────────────┼───────────┘
-            │                      │                    │
-            │ HTTPS/WebSocket      │ HTTPS/WebSocket    │ HTTPS
-            │                      │                    │
-┌───────────┼──────────────────────┼────────────────────┼───────────┐
-│           ▼                      ▼                    ▼           │
-│  ┌────────────────────────────────────────────────────┐          │
-│  │            API Gateway / Load Balancer             │          │
-│  │                    (NGINX)                         │          │
-│  └────────────────────┬───────────────────────────────┘          │
-│                       │                                           │
-│  ┌────────────────────┴───────────────────────────────┐          │
-│  │              API Service Layer                      │          │
-│  └────────────────────────────────────────────────────┘          │
-│                       │                                           │
-│  ┌────────────────────┴───────────────────────────────┐          │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │          │
-│  │  │ Auth     │  │ Security │  │ Threat Intel     │ │          │
-│  │  │ Service  │  │ Analysis │  │ Service          │ │          │
-│  │  └──────────┘  └──────────┘  └──────────────────┘ │          │
-│  │                                                     │          │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────────────┐ │          │
-│  │  │ User     │  │ Audit    │  │ Notification     │ │          │
-│  │  │ Management
-│  │ Management  │  │ Service          │ │          │
-│  │  └──────────┘  └──────────┘  └──────────────────┘ │          │
-│  │                                                     │          │
-│  └────────────────────────────────────────────────────┘          │
-│  Backend (FastAPI - Python 3.11+)                               │
-└───────────────────────┬──────────────────────────────────────────┘
-                        │
-        ┌───────────────┼───────────────┐
-        │               │               │
-┌───────▼────────┐ ┌───▼────────┐ ┌──▼─────────────┐
-│   PostgreSQL   │ │   Redis    │ │  File Storage  │
-│   (Primary DB) │ │  (Cache)   │ │  (S3/MinIO)    │
-└────────────────┘ └────────────┘ └────────────────┘
-        │               │
-        └───────────────┴─────────────────────────┐
-                                                   │
-                      ┌────────────────────────────┤
-                      │                            │
-        ┌─────────────▼──────────┐   ┌────────────▼──────┐
-        │  Message Queue (RabbitMQ) │  │ External APIs    │
-        │  (Async Tasks)            │  │ (OpenAI, etc)    │
-        └──────────────────────────┘  └──────────────────┘
-```
-
-## Service Boundaries
-
-### 1. **Authentication & Authorization Service**
-- **Responsibility**: User authentication, JWT token management, role-based access control
-- **Key Features**:
-  - OAuth2 integration (Google, GitHub)
-  - JWT token generation and validation
-  - Role-based access control (Admin, Analyst, Viewer)
-  - Session management
-- **Database**: Users, Roles, Permissions tables
-- **API Endpoints**: `/api/v1/auth/*`
-
-### 2. **Security Analysis Service**
-- **Responsibility**: Core security analysis and vulnerability assessment
-- **Key Features**:
-  - Threat scanning and detection
-  - Vulnerability assessment
-  - Security score calculation
-  - Risk scoring and prioritization
-- **Database**: Scans, Vulnerabilities, Threats tables
-- **API Endpoints**: `/api/v1/security/*`
-
-### 3. **Threat Intelligence Service**
-- **Responsibility**: Threat data aggregation and intelligence
-- **Key Features**:
-  - Threat data collection
-  - Indicator of Compromise (IoC) tracking
-  - Threat correlation
-  - Intelligence reports
-- **Database**: Threat Data, IoCs, Reports tables
-- **API Endpoints**: `/api/v1/threats/*`
-
-### 4. **User Management Service**
-- **Responsibility**: User profiles and organization management
-- **Key Features**:
-  - User CRUD operations
-  - Organization management
-  - Team management
-  - User preferences and settings
-- **Database**: Users, Organizations, Teams tables
-- **API Endpoints**: `/api/v1/users/*`
-
-### 5. **Audit & Logging Service**
-- **Responsibility**: System auditing and compliance logging
-- **Key Features**:
-  - Action logging
-  - Change tracking
-  - Compliance audit trails
-  - Activity analytics
-- **Database**: Audit Logs table
-- **API Endpoints**: `/api/v1/audit/*`
-
-## Database Schema Overview
-
-### Core Tables
+Three tiers, no message broker, no cache. Everything is synchronous request/response.
 
 ```
-Users
-├── id (UUID, PK)
-├── email (unique)
-├── password_hash
-├── first_name
-├── last_name
-├── role (enum)
-├── organization_id (FK)
-├── is_active
-├── created_at
-└── updated_at
-
-Organizations
-├── id (UUID, PK)
-├── name
-├── industry
-├── size
-├── subscription_tier
-├── created_at
-└── updated_at
-
-Security Scans
-├── id (UUID, PK)
-├── organization_id (FK)
-├── scan_type (enum)
-├── status (enum)
-├── start_time
-├── end_time
-├── results_summary
-└── created_at
-
-Vulnerabilities
-├── id (UUID, PK)
-├── scan_id (FK)
-├── severity (enum: critical, high, medium, low)
-├── title
-├── description
-├── affected_component
-├── remediation
-└── discovered_at
-
-Threats
-├── id (UUID, PK)
-├── threat_name
-├── threat_type (enum)
-├── severity
-├── description
-├── last_seen
-└── created_at
-
-Audit Logs
-├── id (UUID, PK)
-├── user_id (FK)
-├── action (enum)
-├── resource_type
-├── resource_id
-├── changes (JSON)
-├── timestamp
-└── ip_address
+┌──────────────────────────────────────────────────────────────┐
+│  Next.js 14 (App Router)          localhost:3000             │
+│  lib/api.ts  ── axios client, injects JWT from localStorage  │
+└───────────────────────────┬──────────────────────────────────┘
+                            │ HTTP + JSON
+┌───────────────────────────▼──────────────────────────────────┐
+│  FastAPI                          localhost:8000             │
+│                                                              │
+│  middleware   request logging → trusted host → CORS          │
+│  routers/     HTTP only: validate, authorise, delegate       │
+│  services/    the engines. No FastAPI imports.               │
+│  models.py    SQLAlchemy ORM                                 │
+└───────────────────────────┬──────────────────────────────────┘
+                            │
+                    SQLite (dev) / PostgreSQL (target)
 ```
 
-## API Layer Design
+The rule that matters: **`services/` never imports FastAPI**. Engines take
+plain dicts and return plain objects, so they can be unit-tested and called
+from a script without an HTTP server. Routers own HTTP concerns; services own
+logic.
 
-### REST API Principles
+---
 
-- **Versioning**: URL-based versioning (`/api/v1/`, `/api/v2/`)
-- **Resource-Oriented Design**: Operations on resources (users, scans, threats)
-- **Standard HTTP Methods**: GET, POST, PUT, DELETE, PATCH
-- **JSON Payloads**: All request/response bodies in JSON
-- **Consistent Naming**: camelCase for JSON fields, kebab-case for URLs
+## The engines
 
-### Authentication Flow
+### DLP — `services/dlp/`
 
-```
-1. User Login
-   POST /api/v1/auth/login
-   Body: { email, password }
-   Response: { access_token, refresh_token, expires_in }
+`patterns.py` holds compiled regexes for ten data types, each with a severity
+and a base confidence. `detector.py` walks them, skips overlapping matches,
+and scores each hit.
 
-2. Access Protected Resources
-   GET /api/v1/security/scans
-   Header: Authorization: Bearer <access_token>
+Confidence starts at the pattern's base and is adjusted by context: longer
+matches score higher, text near `CONFIDENTIAL` / `SECRET` / `RESTRICTED` gains
+10 points, and obvious test data (`test@`, `example@`) loses 20. Anything below
+50 is discarded. Results sort CRITICAL-first.
 
-3. Refresh Token
-   POST /api/v1/auth/refresh
-   Body: { refresh_token }
-   Response: { access_token, expires_in }
+Detection is **deterministic**. No model call, so the same input always yields
+the same output — which is what makes it usable as a policy input.
 
-4. Logout
-   POST /api/v1/auth/logout
-   Header: Authorization: Bearer <access_token>
-```
+### Threat detection — `services/threat_detection/`
 
-### Authorization Model (Role-Based Access Control)
+Six rules, each a class with `evaluate(context) -> RuleResult`. The engine runs
+all six and collects those that fired, sorted by severity.
 
-```
-Roles:
-├── Admin
-│   └── Full system access, user management, billing
-├── Analyst
-│   └── View/create/modify security analyses
-├── Viewer
-│   └── Read-only access to reports and data
-└── Integrator
-    └── API access for third-party integrations
-```
+| Rule | Fires when |
+|---|---|
+| `SensitiveDataExfiltrationRule` | A DLP hit and an external connection within a 5-minute window |
+| `UnauthorizedToolAccessRule` | A tool is called that is not in the agent's allowed list |
+| `AbnormalAgentBehaviorRule` | Request-rate spike, >3 data types in <30s, or a suspicious tool sequence |
+| `CredentialExposureRule` | DLP detects PASSWORD, API_KEY, or AWS_SECRET |
+| `PromptInjectionRule` | Input matches any of 18 injection patterns |
+| `DangerousToolInvocationRule` | A destructive operation is invoked |
 
-### API Versioning Strategy
+Rules are independent — one throwing does not stop the others. Adding a rule is
+subclassing `ThreatRule` and appending it.
 
-- **Current Version**: `/api/v1/`
-- **Deprecation Policy**: 2 major versions supported simultaneously
-- **Breaking Changes**: Only in major versions
-- **Deprecation Headers**: `Deprecation`, `Sunset` headers in responses
+### Risk scoring — `services/risk/`
 
-### Error Response Format
+`calculator.py` computes each factor; `engine.py` weights and combines them.
 
-```json
-{
-  "error": {
-    "code": "RESOURCE_NOT_FOUND",
-    "message": "The requested resource was not found",
-    "status": 404,
-    "timestamp": "2024-01-15T10:30:00Z",
-    "request_id": "req-12345-abcde",
-    "details": {
-      "resource_type": "Security Scan",
-      "resource_id": "scan-123"
-    }
-  }
-}
-```
+| Factor | Weight |
+|---|---|
+| Application risk | 25% |
+| Data sensitivity | 25% |
+| Agent privilege | 20% |
+| Tool permissions | 15% |
+| Destination risk | 10% |
+| Behaviour anomaly | 5% |
 
-### Rate Limiting Approach
+Weights sum to exactly 1.0. Every factor returns its value, its weight, its
+weighted contribution, and a sentence explaining itself, so a score can always
+be decomposed into why. That explainability is the point — an unexplainable
+risk number is not actionable.
 
-- **Strategy**: Token bucket algorithm
-- **Limits**:
-  - Authenticated users: 1000 requests per hour
-  - Anonymous users: 100 requests per hour
-  - Burst: 50 requests per minute
-- **Response Headers**:
-  - `X-RateLimit-Limit`: Max requests per hour
-  - `X-RateLimit-Remaining`: Requests remaining
-  - `X-RateLimit-Reset`: Unix timestamp of limit reset
+### Policy — `services/policies/`
 
-## Data Flow for Demo Scenario
+A policy is a JSON condition plus an action. Conditions hold triggers
+(`field`, `operator`, `value`) combined with AND or OR. Eight operators:
+`equals`, `contains`, `starts_with`, `ends_with`, `in`, `greater_than`,
+`less_than`, `regex`.
 
-### Scenario: Running a Security Scan
+Evaluation walks enabled policies **in ascending priority order and stops at
+the first match** — first-match-wins, not most-severe-wins. A policy at
+priority 10 shadows one at 50 even if the second is stricter. Every match is
+written to `policy_executions` with the reasoning.
 
-```
-1. User initiates scan via web UI
-   Frontend → POST /api/v1/security/scans/initiate
-   
-2. API validates request and creates scan record
-   Backend → DB: INSERT into scans
-   
-3. Scan job enqueued for processing
-   Backend → Message Queue: Enqueue scan_job
-   
-4. Worker processes scan asynchronously
-   Worker → External Services: Run security checks
-   
-5. Results stored in database
-   Worker → DB: INSERT vulnerabilities
-   
-6. WebSocket notification sent to client
-   Backend → Frontend: SCAN_COMPLETE event
-   
-7. User views results
-   Frontend → GET /api/v1/security/scans/{scan_id}/results
-   
-8. Results displayed and can be exported
-   Frontend: Generate PDF/CSV report
-```
+### Alerting — `services/alerting/`
 
-## Technology Choices and Rationale
+`generator.py` turns a security event into an alert when severity meets the
+threshold (`ALERT_AUTO_GENERATE_SEVERITY`, default CRITICAL). `notifier.py`
+delivers over webhook and email.
 
-| Component | Technology | Rationale |
-|-----------|-----------|-----------|
-| Frontend | Next.js 14+ | SSR, excellent DX, built-in routing, TypeScript support |
-| Backend | FastAPI | High performance, async support, automatic API docs, type hints |
-| Database | PostgreSQL | ACID compliance, complex queries, reliability, scalability |
-| Cache | Redis | High-speed caching, pub/sub for notifications, session storage |
-| Authentication | JWT + OAuth2 | Stateless, scalable, industry standard, secure |
-| Message Queue | RabbitMQ | Reliability, multiple consumer support, asynchronous processing |
-| API Documentation | OpenAPI/Swagger | Auto-generated, interactive, industry standard |
-| Containerization | Docker | Consistency, isolation, scalability, DevOps friendly |
-| Monitoring | Prometheus + Grafana | Time-series metrics, alerting, visualization |
-| Logging | ELK Stack | Centralized logging, powerful search, analysis |
+Two decisions worth calling out:
 
-## Scalability Notes for Production
+- **Entity state is snapshotted into the alert row.** `agent_id` and
+  `application_id` are `ON DELETE SET NULL`, so without a copy an alert becomes
+  unreadable once the agent is deleted. A SOC record read months later must
+  still make sense.
+- **Delivery never raises.** A collector outage must not lose the alert. Both
+  channels record their own outcome and the alert is stored regardless.
 
-### Horizontal Scaling
-- **Stateless Design**: All services are stateless for easy scaling
-- **Load Balancing**: Multiple backend instances behind load balancer
-- **Database Replication**: Read replicas for query scaling
-- **Caching Layer**: Redis cluster for distributed caching
+### Simulation — `services/simulation/`
 
-### Vertical Scaling
-- **Resource Optimization**: FastAPI handles multiple async requests efficiently
-- **Connection Pooling**: Database connection pooling prevents resource exhaustion
-- **Memory Management**: Careful memory profiling and optimization
+⚠️ Scripted narrative, not a real pipeline. It streams eleven fixed steps and
+does not invoke the engines above or write any rows. See
+[KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).
 
-### Performance Optimization
-- **API Response Caching**: Frequently accessed data cached in Redis
-- **Database Indexing**: Strategic indexes on common query patterns
-- **Async Processing**: Long-running tasks processed asynchronously
-- **CDN Integration**: Static assets served via CDN
+---
 
-### Security Considerations
-- **TLS/HTTPS**: All external communication encrypted
-- **API Rate Limiting**: Prevents abuse and DDoS attacks
-- **Input Validation**: All user inputs validated server-side
-- **SQL Injection Prevention**: Parameterized queries throughout
-- **CORS Policy**: Strict CORS headers for frontend communication
-- **Secret Management**: Environment variables, no secrets in code
+## Request path
 
-### Monitoring & Observability
-- **Health Checks**: Regular health checks for all services
-- **Distributed Tracing**: Track requests across services
-- **Application Metrics**: Monitor key performance indicators
-- **Error Tracking**: Centralized error logging and alerting
-- **Audit Logging**: All sensitive operations logged
-
-## Deployment Architecture
+A CRITICAL event posted to `/api/events`:
 
 ```
-Production Environment:
-├── Kubernetes Cluster
-│   ├── Frontend Pods (Next.js)
-│   ├── Backend Pods (FastAPI)
-│   ├── Worker Pods (Celery/Background jobs)
-│   └── Database Pods (PostgreSQL)
-├── Managed Services
-│   ├── Redis Cluster
-│   ├── RabbitMQ Service
-│   └── S3/Object Storage
-└── Observability
-    ├── Prometheus
-    ├── Grafana
-    └── ELK Stack
+POST /api/events
+  ↓ HTTPBearer dependency → decode JWT → claims dict
+  ↓ Pydantic validates SecurityEventCreate
+  ↓ router checks agent_id / application_id exist → 404 if not
+  ↓ INSERT security_events
+  ↓ AlertGenerator.generate_from_event
+       severity >= threshold?  no → return, no alert
+                               yes ↓
+       load agent + application, snapshot them
+       synthesise title and description
+       INSERT alerts
+  ↓ AlertNotifier.dispatch → webhook, email (both off by default)
+  ↓ 201 { event, alert_generated, alert_id }
 ```
 
-## Summary
+---
 
-This architecture provides:
-- ✅ Scalability for growth from MVP to enterprise scale
-- ✅ Clear separation of concerns for maintainability
-- ✅ Asynchronous processing for performance
-- ✅ Security by design with multiple layers
-- ✅ Observable and monitorable system
-- ✅ Cloud-native and containerized
-- ✅ Modern tech stack with strong community support
+## Authentication
+
+JWT bearer tokens, HS256, 24-hour expiry. `get_current_user` decodes the token
+and **returns the claims as a plain dict** — `sub`, `email`, `role` — not a
+`User` row. It does not hit the database.
+
+```python
+current_user.get("role")   # correct
+current_user.role          # AttributeError
+```
+
+That distinction has caused real 500s in this codebase. `app/dependencies.py`
+provides `require_admin` / `require_analyst` helpers that read it correctly.
+
+Passwords use bcrypt directly at 12 rounds. passlib was removed: version 1.7.4
+probes for an old bcrypt bug by hashing a deliberately >72-byte secret at
+import, which bcrypt 4.1+ rejects, breaking every hash and verify.
+
+---
+
+## Middleware order
+
+Registered innermost-first, so execution is outside-in:
+
+```
+ServerErrorMiddleware   ← holds the bare-Exception handler
+  request logging
+    TrustedHost
+      CORS
+        routes
+```
+
+`ServerErrorMiddleware` sits **outside** CORS, so a 500 would reach the browser
+without CORS headers and surface as an opaque `net::ERR_FAILED` rather than the
+error body. `main.py`'s exception handler therefore re-attaches the CORS
+headers itself. Without that, every backend crash looks like a network failure
+in the UI.
+
+---
+
+## Route ordering
+
+FastAPI matches in declaration order, so literal paths must precede
+parameterised siblings:
+
+```python
+@router.get("/statistics")      # must come first
+@router.get("/{policy_id}")     # otherwise this captures "statistics"
+```
+
+This has bitten `/api/policies/statistics` and `/api/alerts/export`. Both are
+now ordered correctly and carry a comment saying why.
+
+---
+
+## Frontend
+
+Next.js App Router. Pages are client components (`'use client'`) that fetch on
+mount — no SSR data loading, no React Query despite it being installed.
+
+All requests go through `lib/api.ts`, which injects the bearer token and, on a
+401, clears the token and redirects to `/login`. **Using raw `axios` bypasses
+both** and produces requests with no credentials.
+
+The app is dark-mode only: `app/layout.tsx` hardcodes `className="dark"` on
+`<html>` with a `bg-slate-900` body. Pages that assume a light background
+render unreadably.
+
+---
+
+## Deliberate omissions
+
+| Not present | Why |
+|---|---|
+| Message queue | Every operation is fast and synchronous at this scale |
+| Cache | No measured hot path yet |
+| Migrations | Alembic is installed but unused; `create_all` at startup |
+| WebSockets | "Real-time" is client polling |
+| Rate limiting | Config keys exist; nothing enforces them |
+| Refresh tokens | `create_refresh_token` exists with no endpoint |
+
+Several are prerequisites for production. See
+[PRODUCTION_ROADMAP.md](PRODUCTION_ROADMAP.md).
