@@ -50,10 +50,11 @@ SessionLocal = sessionmaker(
 )
 
 # ============================================================================
-# DECLARATIVE BASE
+# DECLARATIVE BASE - Imported from models to ensure all models use same Base
 # ============================================================================
 
-Base = declarative_base()
+# Base will be imported from models after models are defined
+Base = None
 
 # ============================================================================
 # DATABASE EVENT LISTENERS
@@ -102,7 +103,9 @@ def init_db() -> None:
     Run this once at application startup.
     """
     try:
-        Base.metadata.create_all(bind=engine)
+        # Import models to register them with their Base
+        from app.models import Base as ModelsBase
+        ModelsBase.metadata.create_all(bind=engine)
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
@@ -134,8 +137,9 @@ def check_db_connection() -> bool:
         bool: True if connection is healthy, False otherwise
     """
     try:
+        from sqlalchemy import text
         with engine.connect() as connection:
-            result = connection.execute("SELECT 1")
+            result = connection.execute(text("SELECT 1"))
             return result is not None
     except Exception as e:
         logger.error(f"Database connection check failed: {e}")

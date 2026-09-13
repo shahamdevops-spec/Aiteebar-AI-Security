@@ -9,11 +9,11 @@ from enum import Enum
 import uuid
 
 from sqlalchemy import (
-    Column, String, UUID, DateTime, Boolean, Numeric, Text, Integer,
+    Column, String, DateTime, Boolean, Numeric, Text, Integer,
     ForeignKey, CheckConstraint, Index, Enum as SQLEnum, func
 )
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import JSON
 
 Base = declarative_base()
 
@@ -137,7 +137,7 @@ class User(Base):
     """User accounts with role-based access control"""
     __tablename__ = "users"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     email = Column(String(255), nullable=False, unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     name = Column(String(255), nullable=False)
@@ -162,7 +162,7 @@ class AIApplication(Base):
     """AI applications and services being assessed"""
     __tablename__ = "ai_applications"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(255), nullable=False, index=True)
     vendor = Column(String(255), index=True)
     category = Column(String(100))
@@ -183,9 +183,9 @@ class AIApplication(Base):
     # Features
     mcp_support = Column(Boolean, default=False, index=True)
     api_available = Column(Boolean, default=False)
-    enterprise_controls = Column(JSONB, default={})
+    enterprise_controls = Column(JSON, default={})
     data_residency = Column(String(100))
-    authentication = Column(JSONB, default={})
+    authentication = Column(JSON, default={})
 
     # Additional
     notes = Column(Text)
@@ -217,8 +217,8 @@ class AIAgent(Base):
     """AI agents deployed from applications"""
     __tablename__ = "ai_agents"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    application_id = Column(UUID(as_uuid=True), ForeignKey("ai_applications.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    application_id = Column(String(36), ForeignKey("ai_applications.id", ondelete="CASCADE"), nullable=False, index=True)
 
     name = Column(String(255), nullable=False, index=True)
     owner = Column(String(255))
@@ -229,8 +229,8 @@ class AIAgent(Base):
     risk_level = Column(SQLEnum(RiskLevel), default=RiskLevel.LOW, nullable=False, index=True)
 
     # Capabilities
-    connected_tools = Column(JSONB, default=[])
-    data_access = Column(JSONB, default={})
+    connected_tools = Column(JSON, default=[])
+    data_access = Column(JSON, default={})
 
     # Status
     status = Column(SQLEnum(AgentStatus), default=AgentStatus.ACTIVE, nullable=False, index=True)
@@ -259,15 +259,15 @@ class MCPTool(Base):
     """MCP tools used by agents"""
     __tablename__ = "mcp_tools"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
 
     name = Column(String(255), nullable=False, index=True)
     type = Column(String(100), nullable=False, index=True)
     description = Column(Text)
 
     # Permissions as JSON array
-    permissions = Column(JSONB, default=[])
+    permissions = Column(JSON, default=[])
 
     # Data Sensitivity
     data_sensitivity = Column(SQLEnum(RiskLevel), default=RiskLevel.LOW, nullable=False, index=True)
@@ -299,9 +299,9 @@ class AgentActivity(Base):
     """Log of agent actions and activities"""
     __tablename__ = "agent_activity"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
-    tool_id = Column(UUID(as_uuid=True), ForeignKey("mcp_tools.id", ondelete="SET NULL"), index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    tool_id = Column(String(36), ForeignKey("mcp_tools.id", ondelete="SET NULL"), index=True)
 
     timestamp = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
     action_type = Column(SQLEnum(ActionType), nullable=False, index=True)
@@ -312,7 +312,7 @@ class AgentActivity(Base):
     risk_score = Column(Numeric(5, 2), default=0, index=True)
 
     # Detailed metadata
-    agent_metadata = Column(JSONB, default={})
+    agent_metadata = Column(JSON, default={})
 
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
 
@@ -336,8 +336,8 @@ class DLPEvent(Base):
     """Data Loss Prevention events"""
     __tablename__ = "dlp_events"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
 
     timestamp = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
 
@@ -373,14 +373,14 @@ class SecurityEvent(Base):
     """Security incidents and alerts"""
     __tablename__ = "security_events"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     event_type = Column(String(100), nullable=False, index=True)
     severity = Column(SQLEnum(EventSeverity), nullable=False, index=True)
 
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="SET NULL"), index=True)
-    application_id = Column(UUID(as_uuid=True), ForeignKey("ai_applications.id", ondelete="SET NULL"), index=True)
-    tool_id = Column(UUID(as_uuid=True), ForeignKey("mcp_tools.id", ondelete="SET NULL"), index=True)
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="SET NULL"), index=True)
+    application_id = Column(String(36), ForeignKey("ai_applications.id", ondelete="SET NULL"), index=True)
+    tool_id = Column(String(36), ForeignKey("mcp_tools.id", ondelete="SET NULL"), index=True)
 
     data_type = Column(String(100))
 
@@ -419,15 +419,15 @@ class Policy(Base):
     """Security policies"""
     __tablename__ = "policies"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_by = Column(String(36), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True)
 
     name = Column(String(255), nullable=False)
     description = Column(Text)
     enabled = Column(Boolean, default=True, nullable=False, index=True)
 
     # Policy definition
-    condition = Column(JSONB, nullable=False, default={})
+    condition = Column(JSON, nullable=False, default={})
     action = Column(SQLEnum(PolicyAction), nullable=False, index=True)
 
     # Priority: lower number = higher priority
@@ -452,9 +452,9 @@ class PolicyAction(Base):
     """Policy execution tracking"""
     __tablename__ = "policy_actions"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    policy_id = Column(UUID(as_uuid=True), ForeignKey("policies.id", ondelete="CASCADE"), nullable=False, index=True)
-    event_id = Column(UUID(as_uuid=True), ForeignKey("security_events.id", ondelete="CASCADE"), nullable=False, index=True)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    policy_id = Column(String(36), ForeignKey("policies.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_id = Column(String(36), ForeignKey("security_events.id", ondelete="CASCADE"), nullable=False, index=True)
 
     action_taken = Column(String(100), nullable=False)
     executed_at = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
@@ -477,7 +477,7 @@ class Destination(Base):
     """External destinations for agent communication"""
     __tablename__ = "destinations"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     name = Column(String(255), nullable=False, index=True)
     url = Column(String(2048))
@@ -503,23 +503,23 @@ class RiskAssessment(Base):
     """Risk assessment snapshots"""
     __tablename__ = "risk_assessments"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     entity_type = Column(SQLEnum(EntityType), nullable=False)
 
     # Generic entity reference
-    application_id = Column(UUID(as_uuid=True), ForeignKey("ai_applications.id", ondelete="CASCADE"), nullable=True)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=True)
-    tool_id = Column(UUID(as_uuid=True), ForeignKey("mcp_tools.id", ondelete="CASCADE"), nullable=True)
+    application_id = Column(String(36), ForeignKey("ai_applications.id", ondelete="CASCADE"), nullable=True)
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=True)
+    tool_id = Column(String(36), ForeignKey("mcp_tools.id", ondelete="CASCADE"), nullable=True)
 
     overall_score = Column(Numeric(5, 2), nullable=False, index=True)
 
     # Dimension scores
-    dimensions = Column(JSONB, default={})
+    dimensions = Column(JSON, default={})
 
     explanation = Column(Text)
-    key_concerns = Column(JSONB, default=[])
-    recommended_controls = Column(JSONB, default=[])
+    key_concerns = Column(JSON, default=[])
+    recommended_controls = Column(JSON, default=[])
 
     assessment_date = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
     next_assessment_date = Column(DateTime(timezone=True))
