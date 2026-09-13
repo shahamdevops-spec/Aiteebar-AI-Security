@@ -109,10 +109,104 @@ export default function DashboardPage() {
         { category: 'Automation', count: 10, risk_score: 52 },
         { category: 'Analytics', count: 8, risk_score: 48 },
       ],
-      events: [],
-      activities: [],
-      agents: [],
-      applications: [],
+      events: [
+        {
+          id: '1',
+          name: 'Unauthorized API Access',
+          severity: 'critical',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+          application: 'Claude',
+        },
+        {
+          id: '2',
+          name: 'Rate Limit Exceeded',
+          severity: 'high',
+          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+          application: 'ChatGPT',
+        },
+        {
+          id: '3',
+          name: 'Unusual Data Access Pattern',
+          severity: 'medium',
+          timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          application: 'Gemini',
+        },
+      ],
+      activities: [
+        {
+          id: '1',
+          agent_name: 'Customer Support Agent',
+          action: 'EXECUTE',
+          status: 'executed',
+          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        },
+        {
+          id: '2',
+          agent_name: 'Developer Agent',
+          action: 'READ',
+          status: 'executed',
+          timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: '3',
+          agent_name: 'Finance Assistant',
+          action: 'WRITE',
+          status: 'blocked',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+      ],
+      agents: [
+        {
+          id: '1',
+          name: 'Finance Assistant',
+          risk_score: 78,
+          status: 'active',
+          application: 'ChatGPT',
+          last_activity: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        },
+        {
+          id: '2',
+          name: 'Customer Support Agent',
+          risk_score: 62,
+          status: 'active',
+          application: 'Claude',
+          last_activity: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        },
+        {
+          id: '3',
+          name: 'HR Assistant',
+          risk_score: 65,
+          status: 'active',
+          application: 'Claude',
+          last_activity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+      ],
+      applications: [
+        {
+          id: '1',
+          name: 'Gemini Enterprise',
+          risk_level: 78,
+          status: 'active',
+          provider: 'Google',
+          agent_count: 3,
+        },
+        {
+          id: '2',
+          name: 'ChatGPT Integration',
+          risk_level: 65,
+          status: 'active',
+          provider: 'OpenAI',
+          agent_count: 2,
+        },
+        {
+          id: '3',
+          name: 'Claude API',
+          risk_level: 42,
+          status: 'active',
+          provider: 'Anthropic',
+          agent_count: 2,
+        },
+      ],
     }
   }
 
@@ -131,13 +225,16 @@ export default function DashboardPage() {
           api.get('/v1/dashboard/top-risky-applications'),
         ])
 
+      const mock = getMockData()
+
       setMetrics(metricsRes.data)
       setRiskData(riskRes.data)
       setCategories(catRes.data)
-      setEvents(eventsRes.data)
-      setActivities(actRes.data)
-      setTopAgents(agentsRes.data)
-      setTopApplications(appsRes.data)
+      // Use mock data if API returns empty arrays
+      setEvents(eventsRes.data && eventsRes.data.length > 0 ? eventsRes.data : mock.events)
+      setActivities(actRes.data && actRes.data.length > 0 ? actRes.data : mock.activities)
+      setTopAgents(agentsRes.data && agentsRes.data.length > 0 ? agentsRes.data : mock.agents)
+      setTopApplications(appsRes.data && appsRes.data.length > 0 ? appsRes.data : mock.applications)
     } catch (err: any) {
       console.error('Failed to fetch dashboard data:', err)
       // Use mock data as fallback for demo purposes

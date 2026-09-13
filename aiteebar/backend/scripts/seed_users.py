@@ -52,7 +52,7 @@ def seed_users(db: Session):
     for user_data in DEMO_USERS:
         password_hash = pwd_context.hash(user_data["password"])
         user = User(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             email=user_data["email"],
             password_hash=password_hash,
             name=user_data["name"],
