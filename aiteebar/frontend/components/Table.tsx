@@ -34,11 +34,11 @@ export function Table<T extends Record<string, any>>({
     <div className={`overflow-x-auto ${className}`}>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-slate-700 bg-slate-900/50">
+          <tr className="border-b border-cyan-500/20 bg-gradient-to-r from-blue-900/30 to-slate-900/30">
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                className="px-4 py-3 text-left font-semibold text-slate-300"
+                className="px-4 py-3 text-left font-semibold text-cyan-300 uppercase text-xs tracking-wider"
               >
                 {col.label}
               </th>
@@ -56,14 +56,14 @@ export function Table<T extends Record<string, any>>({
             data.map((row, index) => (
               <tr
                 key={getRowKey(row, index)}
-                className={`border-b border-slate-700/50 ${
-                  striped && index % 2 === 1 ? 'bg-slate-800/30' : ''
-                } ${hover ? 'hover:bg-slate-800/50' : ''} transition-colors`}
+                className={`border-b border-slate-700/30 ${
+                  striped && index % 2 === 1 ? 'bg-slate-800/20' : ''
+                } ${hover ? 'hover:bg-blue-900/20 hover:border-cyan-500/30' : ''} transition-all duration-200`}
               >
                 {columns.map((col) => (
                   <td
                     key={String(col.key)}
-                    className={`px-4 py-3 text-slate-300 ${col.className || ''}`}
+                    className={`px-4 py-3 text-slate-200 ${col.className || ''}`}
                   >
                     {col.render
                       ? col.render(row[col.key], row)
