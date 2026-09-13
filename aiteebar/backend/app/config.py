@@ -112,6 +112,28 @@ class Settings(BaseSettings):
     openai_model: str = Field(default="gpt-4", env="OPENAI_MODEL")
 
     # ========================================================================
+    # SOC ALERTING
+    # ========================================================================
+
+    # Severity at or above which an event auto-generates an alert
+    alert_auto_generate_severity: str = Field(default="CRITICAL", env="ALERT_AUTO_GENERATE_SEVERITY")
+
+    # Webhook delivery (Splunk HEC, Sentinel, generic HTTPS collector)
+    alert_webhook_enabled: bool = Field(default=False, env="ALERT_WEBHOOK_ENABLED")
+    alert_webhook_url: Optional[str] = Field(default=None, env="ALERT_WEBHOOK_URL")
+    alert_webhook_auth_header: Optional[str] = Field(default=None, env="ALERT_WEBHOOK_AUTH_HEADER")
+    alert_webhook_timeout_seconds: int = Field(default=10, env="ALERT_WEBHOOK_TIMEOUT_SECONDS")
+
+    # Email delivery
+    alert_email_enabled: bool = Field(default=False, env="ALERT_EMAIL_ENABLED")
+    alert_email_from: str = Field(default="soc@aiteebar.ai", env="ALERT_EMAIL_FROM")
+    alert_email_recipients: List[str] = Field(default=[], env="ALERT_EMAIL_RECIPIENTS")
+    smtp_host: Optional[str] = Field(default=None, env="SMTP_HOST")
+    smtp_port: int = Field(default=587, env="SMTP_PORT")
+    smtp_username: Optional[str] = Field(default=None, env="SMTP_USERNAME")
+    smtp_password: Optional[str] = Field(default=None, env="SMTP_PASSWORD")
+
+    # ========================================================================
     # FEATURE FLAGS
     # ========================================================================
 
@@ -144,6 +166,13 @@ class Settings(BaseSettings):
         """Parse CORS headers from comma-separated string"""
         if isinstance(v, str):
             return [header.strip() for header in v.split(",")]
+        return v
+
+    @validator("alert_email_recipients", pre=True)
+    def parse_alert_recipients(cls, v):
+        """Parse alert recipients from comma-separated string"""
+        if isinstance(v, str):
+            return [addr.strip() for addr in v.split(",") if addr.strip()]
         return v
 
     @property

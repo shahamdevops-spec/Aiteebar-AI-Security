@@ -84,6 +84,15 @@ async def list_policies(
     return policies
 
 
+# Declared before /{policy_id} so the literal path is not captured as an ID.
+@router.get("/statistics", response_model=PolicyStatisticsResponse)
+async def get_policy_statistics(db: Session = Depends(get_db)):
+    """
+    Get policy system statistics and effectiveness metrics.
+    """
+    return PolicyEngine.get_policy_statistics(db)
+
+
 @router.get("/{policy_id}", response_model=PolicyResponse)
 async def get_policy(
     policy_id: str,
@@ -210,16 +219,6 @@ async def get_policy_executions(
     ).offset(skip).limit(limit).all()
 
     return executions
-
-
-@router.get("/statistics", response_model=PolicyStatisticsResponse)
-async def get_policy_statistics(db: Session = Depends(get_db)):
-    """
-    Get policy system statistics and effectiveness metrics.
-    """
-    stats = PolicyEngine.get_policy_statistics(db)
-
-    return stats
 
 
 @router.post("/{policy_id}/test")

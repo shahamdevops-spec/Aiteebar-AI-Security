@@ -100,6 +100,34 @@ class PolicyAction(str, Enum):
     BLOCK = "BLOCK"
 
 
+class SecurityEventType(str, Enum):
+    """Categories of security events logged by the platform"""
+    AGENT_TOOL_CONNECTION = "agent_tool_connection"
+    DATA_ACCESS = "data_access"
+    DLP_DETECTION = "dlp_detection"
+    RISK_THRESHOLD_EXCEEDED = "risk_threshold_exceeded"
+    POLICY_VIOLATION = "policy_violation"
+    EXTERNAL_COMMUNICATION = "external_communication"
+    THREAT_DETECTED = "threat_detected"
+    BLOCK_ACTION_TAKEN = "block_action_taken"
+
+
+class AlertStatus(str, Enum):
+    """SOC alert triage state"""
+    OPEN = "open"
+    ACKNOWLEDGED = "acknowledged"
+    RESOLVED = "resolved"
+    FALSE_POSITIVE = "false_positive"
+
+
+class AlertDeliveryStatus(str, Enum):
+    """Outbound delivery state for an alert"""
+    NOT_ATTEMPTED = "not_attempted"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+    DISABLED = "disabled"
+
+
 class EventStatus(str, Enum):
     """Status of security events"""
     OPEN = "open"
@@ -608,3 +636,63 @@ class ThreatDetection(Base):
 
     def __repr__(self):
         return f"<ThreatDetection(id={self.id}, agent_id={self.agent_id}, threat_type={self.threat_type}, severity={self.severity})>"
+
+
+# ============================================================================
+# 13. ALERTS MODEL
+# ============================================================================
+
+class Alert(Base):
+    """SOC alerts generated from security events, shaped for SIEM export"""
+    __tablename__ = "alerts"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    timestamp = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
+    severity = Column(SQLEnum(EventSeverity), nullable=False, index=True)
+
+    title = Column(String(255), nullable=False)
+    description = Column(Text, nullable=False)
+
+    agent_id = Column(String(36), ForeignKey("ai_agents.id", ondelete="SET NULL"), index=True)
+    application_id = Column(String(36), ForeignKey("ai_applications.id", ondelete="SET NULL"), index=True)
+
+    # Entity state is copied in at generation time so the alert stays readable
+    # after the agent or application row is modified or deleted.
+    agent_snapshot = Column(JSON, default={})
+    application_snapshot = Column(JSON, default={})
+
+    data_type = Column(String(100), index=True)
+    destination = Column(String(255))
+    risk_score = Column(Numeric(5, 2), default=0, index=True)
+    action_taken = Column(SQLEnum(ActionTaken), nullable=False)
+
+    source = Column(SQLEnum(DetectionMethod), nullable=False, index=True)
+    event_ids = Column(JSON, default=[])
+
+    status = Column(SQLEnum(AlertStatus), default=AlertStatus.OPEN, nullable=False, index=True)
+    acknowledged_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"))
+    acknowledged_at = Column(DateTime(timezone=True))
+
+    delivery_status = Column(
+        SQLEnum(AlertDeliveryStatus),
+        default=AlertDeliveryStatus.NOT_ATTEMPTED,
+        nullable=False,
+    )
+    delivery_error = Column(Text)
+
+    created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False, index=True)
+    updated_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
+
+    # Relationships
+    agent = relationship("AIAgent", backref="alerts")
+    application = relationship("AIApplication", backref="alerts")
+
+    __table_args__ = (
+        CheckConstraint("risk_score >= 0 AND risk_score <= 100"),
+        Index("idx_alerts_severity_status", severity, status),
+        Index("idx_alerts_timestamp", timestamp.desc()),
+    )
+
+    def __repr__(self):
+        return f"<Alert(id={self.id}, severity={self.severity}, title={self.title})>"
