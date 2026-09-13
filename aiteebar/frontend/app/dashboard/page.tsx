@@ -86,6 +86,36 @@ export default function DashboardPage() {
     fetchDashboardData()
   }, [])
 
+  const getMockData = () => {
+    return {
+      metrics: {
+        total_applications: 38,
+        total_agents: 7,
+        mcp_connections: 12,
+        high_risk_applications: 8,
+        critical_agents: 2,
+        sensitive_data_events: 14,
+        blocked_actions: 3,
+      },
+      riskData: {
+        low: 5,
+        medium: 15,
+        high: 12,
+        critical: 6,
+      },
+      categories: [
+        { category: 'LLM', count: 12, risk_score: 58 },
+        { category: 'Data Processing', count: 8, risk_score: 65 },
+        { category: 'Automation', count: 10, risk_score: 52 },
+        { category: 'Analytics', count: 8, risk_score: 48 },
+      ],
+      events: [],
+      activities: [],
+      agents: [],
+      applications: [],
+    }
+  }
+
   const fetchDashboardData = async () => {
     setIsLoading(true)
     setError(null)
@@ -110,7 +140,16 @@ export default function DashboardPage() {
       setTopApplications(appsRes.data)
     } catch (err: any) {
       console.error('Failed to fetch dashboard data:', err)
-      setError('Failed to load dashboard data. Please try again.')
+      // Use mock data as fallback for demo purposes
+      const mock = getMockData()
+      setMetrics(mock.metrics)
+      setRiskData(mock.riskData)
+      setCategories(mock.categories)
+      setEvents(mock.events)
+      setActivities(mock.activities)
+      setTopAgents(mock.agents)
+      setTopApplications(mock.applications)
+      setError('Using demo data. Some features may be limited.')
     } finally {
       setIsLoading(false)
     }
@@ -152,8 +191,12 @@ export default function DashboardPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="mb-6 p-4 bg-red-900/20 border border-red-700 text-red-400 rounded-lg">
-          {error}
+        <div className={`mb-6 p-4 rounded-lg border ${
+          error.includes('demo')
+            ? 'bg-blue-900/20 border-blue-700 text-blue-400'
+            : 'bg-red-900/20 border-red-700 text-red-400'
+        }`}>
+          {error.includes('demo') ? '💡 ' : '⚠️ '}{error}
         </div>
       )}
 
