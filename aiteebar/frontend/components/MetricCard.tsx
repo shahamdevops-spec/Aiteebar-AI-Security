@@ -13,11 +13,11 @@ interface MetricCardProps {
 }
 
 const colorStyles = {
-  blue: 'text-blue-400 bg-blue-900/20',
-  green: 'text-green-400 bg-green-900/20',
-  orange: 'text-orange-400 bg-orange-900/20',
-  red: 'text-red-400 bg-red-900/20',
-  purple: 'text-purple-400 bg-purple-900/20',
+  blue: 'text-blue-300 bg-gradient-to-br from-blue-900/40 to-blue-800/40 border border-blue-500/20',
+  green: 'text-green-300 bg-gradient-to-br from-green-900/40 to-green-800/40 border border-green-500/20',
+  orange: 'text-orange-300 bg-gradient-to-br from-orange-900/40 to-orange-800/40 border border-orange-500/20',
+  red: 'text-red-300 bg-gradient-to-br from-red-900/40 to-red-800/40 border border-red-500/20',
+  purple: 'text-purple-300 bg-gradient-to-br from-purple-900/40 to-purple-800/40 border border-purple-500/20',
 }
 
 export function MetricCard({
@@ -30,14 +30,14 @@ export function MetricCard({
   const colorClass = colorStyles[color]
 
   return (
-    <Card>
+    <Card className="group">
       <div className="flex items-start justify-between">
-        <div>
-          <p className="text-slate-400 text-sm font-medium mb-2">{label}</p>
-          <div className="flex items-baseline gap-2">
-            <div className="text-3xl font-bold text-slate-100">{value}</div>
+        <div className="flex-1">
+          <p className="text-slate-400 text-xs uppercase tracking-wider font-semibold mb-3">{label}</p>
+          <div className="flex items-baseline gap-3">
+            <div className="text-4xl font-bold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">{value}</div>
             {trend && (
-              <div className={`text-sm ${trend.direction === 'up' ? 'text-red-400' : 'text-green-400'}`}>
+              <div className={`text-sm font-semibold px-2 py-1 rounded-lg ${trend.direction === 'up' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}>
                 {trend.direction === 'up' && '📈'}
                 {trend.direction === 'down' && '📉'}
                 {trend.direction === 'stable' && '➡️'}
@@ -46,7 +46,7 @@ export function MetricCard({
             )}
           </div>
         </div>
-        <div className={`text-4xl p-3 rounded-lg ${colorClass}`}>
+        <div className={`text-4xl p-4 rounded-xl ${colorClass} flex items-center justify-center w-16 h-16`}>
           {icon}
         </div>
       </div>
