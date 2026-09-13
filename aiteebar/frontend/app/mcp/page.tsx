@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 
@@ -12,10 +15,11 @@ export default function MCPPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">MCP Tools</h1>
-        <p className="text-slate-400 mt-2">Manage Model Context Protocol tools and integrations.</p>
-      </div>
+      <PageHeader
+        title="MCP Tools"
+        description="Manage Model Context Protocol tools and integrations."
+        backHref="/dashboard"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {tools.map((tool) => (

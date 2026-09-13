@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
+import PageHeader from '@/components/PageHeader';
 import Loading from '@/components/common/Loading';
 
 export default function RiskMetricsPage() {
@@ -59,11 +60,11 @@ export default function RiskMetricsPage() {
 
   return (
     <div className="space-y-8 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Risk Assessment Metrics</h1>
-        <p className="text-gray-600">Organization-wide AI application risk overview</p>
-      </div>
+      <PageHeader
+        title="Risk Assessment Metrics"
+        description="Organization-wide AI application risk overview"
+        backHref="/dashboard"
+      />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

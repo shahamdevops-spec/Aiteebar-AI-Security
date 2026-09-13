@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Table } from '@/components/Table'

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import axios from 'axios';
+import PageHeader from '@/components/PageHeader';
 import RiskScoreGauge from '@/components/risk/RiskScoreGauge';
 import DimensionBreakdown from '@/components/risk/DimensionBreakdown';
 import KeyConcernsList from '@/components/risk/KeyConcernsList';
@@ -61,18 +62,19 @@ export default function RiskAssessmentPage() {
 
   return (
     <div className="space-y-8 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">{riskAssessment.application_name}</h1>
-        <p className="text-gray-600">Risk Assessment & Security Evaluation</p>
-        {riskAssessment.is_demo && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              ℹ️ This is demonstration data. Risk scores are calculated for illustrative purposes only.
-            </p>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title={riskAssessment.application_name}
+        description="Risk Assessment & Security Evaluation"
+        backHref="/applications"
+      />
+
+      {riskAssessment.is_demo && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            ℹ️ This is demonstration data. Risk scores are calculated for illustrative purposes only.
+          </p>
+        </div>
+      )}
 
       {/* Overall Risk Score */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

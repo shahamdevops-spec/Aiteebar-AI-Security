@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { RiskScore } from '@/components/RiskScore'
 import { Chart } from '@/components/Chart'
@@ -15,10 +18,11 @@ export default function RiskPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Risk Assessment</h1>
-        <p className="text-slate-400 mt-2">Comprehensive risk analysis and scoring.</p>
-      </div>
+      <PageHeader
+        title="Risk Assessment"
+        description="Comprehensive risk analysis and scoring."
+        backHref="/dashboard"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         {riskMetrics.map((metric) => (

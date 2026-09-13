@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Table } from '@/components/Table'
@@ -50,10 +53,11 @@ export default function AgentsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">AI Agents</h1>
-        <p className="text-slate-400 mt-2">Monitor and manage autonomous security agents.</p>
-      </div>
+      <PageHeader
+        title="AI Agents"
+        description="Monitor and manage autonomous security agents."
+        backHref="/dashboard"
+      />
 
       <Card title="Active Agents">
         <Table<Agent>

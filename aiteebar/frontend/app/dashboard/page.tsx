@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import PageHeader from '@/components/PageHeader'
 import { MetricCard } from '@/components/MetricCard'
 import { RiskDistributionChart } from '@/components/RiskDistributionChart'
 import { ApplicationCategoriesChart } from '@/components/ApplicationCategoriesChart'
@@ -134,19 +135,20 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-100">Dashboard</h1>
-          <p className="text-slate-400 mt-2">Welcome back! Here's your security overview.</p>
-        </div>
-        <button
-          onClick={fetchDashboardData}
-          disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
-        >
-          {isLoading ? 'Refreshing...' : '🔄 Refresh'}
-        </button>
-      </div>
+      <PageHeader
+        title="Dashboard"
+        description="Welcome back! Here's your security overview."
+        showBackButton={false}
+        actions={
+          <button
+            onClick={fetchDashboardData}
+            disabled={isLoading}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors"
+          >
+            {isLoading ? 'Refreshing...' : '🔄 Refresh'}
+          </button>
+        }
+      />
 
       {/* Error Alert */}
       {error && (

@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { RiskScore } from '@/components/RiskScore'
@@ -41,10 +44,11 @@ export default function ApplicationsPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">AI Applications</h1>
-        <p className="text-slate-400 mt-2">Monitor and manage your AI application integrations.</p>
-      </div>
+      <PageHeader
+        title="AI Applications"
+        description="Monitor and manage your AI application integrations."
+        backHref="/dashboard"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {applications.map((app) => (

@@ -1,14 +1,18 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 
 export default function SettingsPage() {
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Settings</h1>
-        <p className="text-slate-400 mt-2">Manage your account and application settings.</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Manage your account and application settings."
+        backHref="/dashboard"
+      />
 
       {/* Profile Settings */}
       <Card title="Profile Settings" subtitle="Update your account information" className="mb-6">

@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Table } from '@/components/Table'
@@ -38,10 +41,11 @@ export default function DLPPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Data Loss Prevention</h1>
-        <p className="text-slate-400 mt-2">Monitor data loss prevention violations.</p>
-      </div>
+      <PageHeader
+        title="Data Loss Prevention"
+        description="Monitor data loss prevention violations."
+        backHref="/dashboard"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>

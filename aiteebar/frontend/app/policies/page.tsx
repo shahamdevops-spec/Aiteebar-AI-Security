@@ -1,4 +1,7 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Badge } from '@/components/Badge'
 import { Table } from '@/components/Table'
@@ -45,10 +48,11 @@ export default function PoliciesPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Security Policies</h1>
-        <p className="text-slate-400 mt-2">Define and manage security policies.</p>
-      </div>
+      <PageHeader
+        title="Security Policies"
+        description="Define and manage security policies."
+        backHref="/dashboard"
+      />
 
       <Card title="Active Policies">
         <Table<Policy>

@@ -1,14 +1,18 @@
+'use client'
+
 import React from 'react'
+import PageHeader from '@/components/PageHeader'
 import { Card } from '@/components/Card'
 import { Chart } from '@/components/Chart'
 
 export default function GraphPage() {
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100">Threat Graph</h1>
-        <p className="text-slate-400 mt-2">Visualize relationships between threats, applications, and agents.</p>
-      </div>
+      <PageHeader
+        title="Threat Graph"
+        description="Visualize relationships between threats, applications, and agents."
+        backHref="/dashboard"
+      />
 
       <Card className="mb-6">
         <Chart
