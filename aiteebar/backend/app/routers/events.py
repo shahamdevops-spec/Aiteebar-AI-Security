@@ -17,7 +17,6 @@ from app.models import (
     EventSeverity,
     SecurityEvent,
     SecurityEventType,
-    User,
 )
 from app.schemas.event import (
     SecurityEventCreate,
@@ -34,7 +33,7 @@ router = APIRouter(prefix="/api/events", tags=["events"])
 async def log_event(
     event_data: SecurityEventCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Log a security event.

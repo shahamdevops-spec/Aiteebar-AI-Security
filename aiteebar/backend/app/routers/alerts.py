@@ -16,7 +16,6 @@ from app.models import (
     AIAgent,
     AIApplication,
     EventSeverity,
-    User,
 )
 from app.schemas.alert import (
     AlertAcknowledge,
@@ -35,7 +34,7 @@ router = APIRouter(prefix="/api/alerts", tags=["alerts"])
 async def create_alert(
     alert_data: AlertCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Generate an alert directly.
@@ -183,7 +182,7 @@ async def update_alert_status(
     alert_id: str,
     body: AlertAcknowledge,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """Acknowledge, resolve, or mark an alert as a false positive."""
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
@@ -198,7 +197,7 @@ async def update_alert_status(
     alert.updated_at = datetime.utcnow()
 
     if body.status != AlertStatus.OPEN:
-        alert.acknowledged_by = current_user.id
+        alert.acknowledged_by = current_user.get("sub")
         alert.acknowledged_at = datetime.utcnow()
     else:
         alert.acknowledged_by = None
@@ -214,7 +213,7 @@ async def update_alert_status(
 async def deliver_alert(
     alert_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Re-send an alert over the enabled delivery channels.

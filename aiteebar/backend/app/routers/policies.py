@@ -9,7 +9,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.database import get_db
-from app.models import Policy, PolicyExecution, User, PolicyAction
+from app.models import Policy, PolicyExecution
 from app.schemas.policy import (
     PolicyCreate,
     PolicyUpdate,
@@ -27,21 +27,22 @@ router = APIRouter(prefix="/api/policies", tags=["policies"])
 async def create_policy(
     policy_data: PolicyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Create a new security policy.
 
     Requires admin privileges.
     """
-    if current_user.role.value != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can create policies"
         )
 
-    # Validate condition structure
-    if not policy_data.condition.get("triggers"):
+    # condition is a ConditionDefinition model, so read attributes and dump to
+    # a plain dict for the JSON column.
+    if not policy_data.condition.triggers:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Policy must have at least one trigger"
@@ -50,11 +51,11 @@ async def create_policy(
     policy = Policy(
         name=policy_data.name,
         description=policy_data.description,
-        condition=policy_data.condition,
+        condition=policy_data.condition.model_dump(),
         action=policy_data.action,
         priority=policy_data.priority,
         enabled=policy_data.enabled,
-        created_by=current_user.id
+        created_by=current_user.get("sub")
     )
 
     db.add(policy)
@@ -117,14 +118,14 @@ async def update_policy(
     policy_id: str,
     policy_data: PolicyUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Update an existing policy.
 
     Requires admin privileges.
     """
-    if current_user.role.value != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can update policies"
@@ -144,12 +145,12 @@ async def update_policy(
     if policy_data.description is not None:
         policy.description = policy_data.description
     if policy_data.condition is not None:
-        if not policy_data.condition.get("triggers"):
+        if not policy_data.condition.triggers:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Policy must have at least one trigger"
             )
-        policy.condition = policy_data.condition
+        policy.condition = policy_data.condition.model_dump()
     if policy_data.action is not None:
         policy.action = policy_data.action
     if policy_data.priority is not None:
@@ -169,14 +170,14 @@ async def update_policy(
 async def delete_policy(
     policy_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Delete a policy.
 
     Requires admin privileges.
     """
-    if current_user.role.value != "admin":
+    if current_user.get("role") != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can delete policies"

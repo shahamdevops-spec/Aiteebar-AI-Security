@@ -169,6 +169,18 @@ async def general_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions"""
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
 
+    # This handler runs in ServerErrorMiddleware, which sits outside
+    # CORSMiddleware, so the response would otherwise carry no CORS headers and
+    # a browser would surface the 500 as an opaque network failure instead of
+    # the message below. Echo the headers here when the origin is allowed.
+    headers = {}
+    origin = request.headers.get("origin")
+    if origin and (origin in settings.cors_origins or "*" in settings.cors_origins):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Vary"] = "Origin"
+        if settings.cors_credentials:
+            headers["Access-Control-Allow-Credentials"] = "true"
+
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
@@ -179,6 +191,7 @@ async def general_exception_handler(request: Request, exc: Exception):
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         },
+        headers=headers,
     )
 
 # ============================================================================
