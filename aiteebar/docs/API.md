@@ -266,6 +266,24 @@ result. Treat it as a presentation aid.
 
 ---
 
+## MITRE ATLAS — `/api/atlas`
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| GET | `` | — | Version, counts, headline coverage |
+| GET | `/tactics` | — | Tactics in matrix order with per-tactic counts |
+| GET | `/matrix` | — | Full matrix with a `detected` flag on every technique |
+| GET | `/coverage` | — | Per-tactic covered and uncovered counts |
+| GET | `/mappings` | — | Every detection-to-technique claim, with rationale |
+| GET | `/techniques` | — | All techniques. `tactic` `detected_only` |
+| GET | `/techniques/{id}` | — | One technique and what detects it. 404 on unknown id |
+
+Alerts carry their techniques as `mitre_atlas` in the SIEM payload. Full
+detail, including the coverage breakdown and how to refresh the reference
+data: [MITRE_ATLAS.md](MITRE_ATLAS.md).
+
+---
+
 ## Health
 
 | Method | Path | Purpose |

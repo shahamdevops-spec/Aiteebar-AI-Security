@@ -670,6 +670,12 @@ class Alert(Base):
     source = Column(SQLEnum(DetectionMethod), nullable=False, index=True)
     event_ids = Column(JSON, default=[])
 
+    # MITRE ATLAS techniques, resolved when the alert is generated and frozen
+    # alongside the entity snapshots. Freezing matters: if the mapping table is
+    # later revised, a historical alert should still show what was asserted at
+    # the time it was raised.
+    atlas_techniques = Column(JSON, default=[])
+
     status = Column(SQLEnum(AlertStatus), default=AlertStatus.OPEN, nullable=False, index=True)
     acknowledged_by = Column(String(36), ForeignKey("users.id", ondelete="SET NULL"))
     acknowledged_at = Column(DateTime(timezone=True))

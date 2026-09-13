@@ -21,6 +21,7 @@ from app.models import (
     SecurityEvent,
     SecurityEventType,
 )
+from app.services.atlas import mapping as atlas_mapping
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +105,11 @@ class AlertGenerator:
             action_taken=event.action_taken,
             source=event.detection_method or DetectionMethod.OTHER,
             event_ids=event_ids,
+            atlas_techniques=atlas_mapping.for_alert(
+                event_type=event.event_type,
+                data_type=event.data_type,
+                destination=event.destination,
+            ),
             status=AlertStatus.OPEN,
         )
 
@@ -150,7 +156,14 @@ class AlertGenerator:
             SecurityEventType.EXTERNAL_COMMUNICATION,
             SecurityEventType.BLOCK_ACTION_TAKEN,
         }
-        if event_type in exfiltration_types and event.data_type and event.destination:
+        # The destination must actually be external. Titling internal data
+        # movement an "exfiltration attempt" is a false alarm, and it also
+        # contradicted the ATLAS mapping, which correctly withheld T0025.
+        if (
+            event_type in exfiltration_types
+            and event.data_type
+            and atlas_mapping.is_external_destination(event.destination or "")
+        ):
             return "AI Agent Data Exfiltration Attempt"
 
         return TITLE_BY_EVENT_TYPE.get(event_type, f"Security Event: {event.event_type}")
@@ -232,4 +245,5 @@ class AlertGenerator:
             "action_taken": alert.action_taken.value,
             "source": alert.source.value,
             "events": alert.event_ids or [],
+            "mitre_atlas": alert.atlas_techniques or [],
         }

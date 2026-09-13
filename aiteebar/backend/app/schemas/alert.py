@@ -56,6 +56,9 @@ class AlertResponse(BaseModel):
 
     source: DetectionMethod
     event_ids: List[str]
+    atlas_techniques: List[Dict[str, Any]] = Field(
+        default_factory=list, description="MITRE ATLAS techniques resolved at generation time"
+    )
 
     status: AlertStatus
     acknowledged_by: Optional[str]
@@ -88,6 +91,10 @@ class SiemAlert(BaseModel):
     action_taken: str
     source: str
     events: List[str]
+    mitre_atlas: List[Dict[str, Any]] = Field(
+        default_factory=list,
+        description="MITRE ATLAS techniques, for SIEM correlation",
+    )
 
 
 class SiemExportResponse(BaseModel):

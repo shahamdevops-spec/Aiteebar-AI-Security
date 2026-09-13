@@ -20,6 +20,7 @@ exercised against a live server. It is not production software — see
 | **Risk scoring** | Seven weighted factors producing an explainable 0-100 score with per-factor contributions |
 | **Policy engine** | Conditional rules with AND/OR logic and eight operators, resolving to ALLOW / WARN / REQUIRE_APPROVAL / BLOCK |
 | **SOC alerting** | SIEM-shaped alerts auto-generated from CRITICAL events, with webhook and email delivery |
+| **MITRE ATLAS** | Detections mapped to ATLAS techniques with confidence and rationale, carried in every alert. Coverage: 9 of 59 techniques |
 
 ---
 
@@ -74,6 +75,7 @@ Full instructions, including troubleshooting, are in
 | [SECURITY.md](docs/SECURITY.md) | Assessing it for deployment |
 | [KNOWN_LIMITATIONS.md](docs/KNOWN_LIMITATIONS.md) | **Before trusting any output** |
 | [PRODUCTION_ROADMAP.md](docs/PRODUCTION_ROADMAP.md) | Planning the path to production |
+| [MITRE_ATLAS.md](docs/MITRE_ATLAS.md) | Understanding the ATLAS mapping and coverage |
 | [DEVELOPER_GUIDE.md](docs/DEVELOPER_GUIDE.md) | Contributing code |
 
 Component deep-dives: [DLP_ENGINE.md](docs/DLP_ENGINE.md) ·

@@ -22,7 +22,7 @@ from app.exceptions import (
 )
 from app.routers import (
     auth, dashboard, applications, risk, dlp, threats, risk_score,
-    policies, simulation, events, alerts,
+    policies, simulation, events, alerts, atlas,
 )
 
 # Configure logging
@@ -322,6 +322,9 @@ app.include_router(events.router)
 
 # SOC alerting
 app.include_router(alerts.router)
+
+# MITRE ATLAS framework mapping
+app.include_router(atlas.router)
 
 # ============================================================================
 # APPLICATION ENTRY POINT
