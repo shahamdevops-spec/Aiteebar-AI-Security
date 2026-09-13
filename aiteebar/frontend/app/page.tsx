@@ -1,6 +1,29 @@
-import React from 'react';
+'use client'
+
+import React, { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { isAuthenticated } from '@/lib/auth'
+import { Navbar } from '@/components/Navbar'
 
 export default function Home() {
+  const router = useRouter()
+  const authenticated = isAuthenticated()
+
+  useEffect(() => {
+    if (authenticated) {
+      router.push('/dashboard')
+    }
+  }, [authenticated, router])
+
+  if (authenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-slate-400">Redirecting to dashboard...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 text-white">
       {/* Navigation */}
@@ -11,15 +34,12 @@ export default function Home() {
               <h1 className="text-2xl font-bold">🔒 Aiteebar AI Security</h1>
             </div>
             <div className="flex gap-4">
-              <button className="px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded">
-                Dashboard
-              </button>
-              <button className="px-4 py-2 text-sm font-medium hover:bg-slate-700 rounded">
-                Settings
-              </button>
-              <button className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 rounded">
+              <Link
+                href="/login"
+                className="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 rounded"
+              >
                 Sign In
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -33,12 +53,15 @@ export default function Home() {
           </h2>
           <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
             Advanced threat detection, vulnerability assessment, and security analysis
-            powered by artificial intelligence. Protect your infrastructure today.
+            powered by artificial intelligence. Protect your AI infrastructure today.
           </p>
           <div className="flex gap-4 justify-center">
-            <button className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold">
+            <Link
+              href="/login"
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold inline-block"
+            >
               Get Started
-            </button>
+            </Link>
             <button className="px-8 py-3 border border-blue-500 text-blue-400 hover:bg-blue-950 rounded-lg font-semibold">
               Learn More
             </button>
@@ -84,30 +107,30 @@ export default function Home() {
       {/* Status Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="bg-slate-800 p-8 rounded-lg border border-slate-700">
-          <h3 className="text-2xl font-bold mb-4">Application Status</h3>
+          <h3 className="text-2xl font-bold mb-4">Getting Started</h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Frontend</span>
-              <span className="bg-green-500 text-white px-3 py-1 rounded text-sm font-semibold">
-                ✓ Running
-              </span>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">1️⃣</span>
+              <div>
+                <div className="font-semibold">Sign In</div>
+                <div className="text-slate-400 text-sm">Create an account or use demo credentials</div>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Backend API</span>
-              <span className="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-semibold">
-                ⓘ Starting
-              </span>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">2️⃣</span>
+              <div>
+                <div className="font-semibold">Configure Applications</div>
+                <div className="text-slate-400 text-sm">Add your AI applications and integrations</div>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-300">Database</span>
-              <span className="bg-yellow-500 text-white px-3 py-1 rounded text-sm font-semibold">
-                ⓘ Initializing
-              </span>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">3️⃣</span>
+              <div>
+                <div className="font-semibold">Monitor & Analyze</div>
+                <div className="text-slate-400 text-sm">Track threats and get actionable insights</div>
+              </div>
             </div>
           </div>
-          <p className="text-slate-400 text-sm mt-4">
-            Backend API will be available at <code className="bg-slate-700 px-2 py-1 rounded">http://localhost:8000</code>
-          </p>
         </div>
       </section>
 
@@ -118,5 +141,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  );
+  )
 }

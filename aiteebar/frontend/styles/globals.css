@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply border-neutral-700;
+}
+
+html {
+  @apply scroll-smooth;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-slate-900 text-slate-100;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-600 rounded-full hover:bg-slate-500;
+}
+
+/* Selection */
+::selection {
+  @apply bg-blue-600 text-white;
+}
+
+/* Code blocks */
+code {
+  @apply font-mono text-sm;
+}
+
+pre {
+  @apply bg-slate-800 rounded-lg p-4 overflow-x-auto;
+}
+
+/* Links */
+a {
+  @apply text-blue-400 hover:text-blue-300 transition-colors;
+}
+
+/* Buttons base */
+button {
+  @apply transition-all duration-200;
+}
+
+/* Focus styles */
+:focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-900;
+}
+
+/* Input styles */
+input,
+textarea,
+select {
+  @apply bg-slate-800 text-slate-100 rounded border border-slate-700 px-3 py-2;
+  @apply placeholder-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(
+    to right,
+    #1e293b 0%,
+    #334155 50%,
+    #1e293b 100%
+  );
+  background-size: 1000px 100%;
+}
