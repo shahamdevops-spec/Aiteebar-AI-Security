@@ -1,0 +1,154 @@
+"""
+Database connection and session management for SQLAlchemy.
+Handles engine initialization, session factory, and connection pooling.
+"""
+
+from sqlalchemy import create_engine, event
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+from sqlalchemy.pool import QueuePool, NullPool
+from typing import Generator
+import logging
+
+from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# DATABASE ENGINE CONFIGURATION
+# ============================================================================
+
+# Determine pool class based on environment
+if settings.is_development:
+    pool_class = QueuePool
+else:
+    pool_class = QueuePool
+
+# Create SQLAlchemy engine with connection pooling
+engine = create_engine(
+    settings.database_url,
+
+    # Connection pooling
+    poolclass=pool_class,
+    pool_size=settings.database_pool_size,
+    max_overflow=settings.database_max_overflow,
+    pool_recycle=settings.database_pool_recycle,
+    pool_pre_ping=settings.database_pool_pre_ping,
+
+    # Echo SQL in development
+    echo=settings.database_echo,
+
+    # Connection parameters
+    connect_args={
+        "connect_timeout": 10,
+    },
+)
+
+# ============================================================================
+# SESSION FACTORY
+# ============================================================================
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    expire_on_commit=False,
+)
+
+# ============================================================================
+# DECLARATIVE BASE
+# ============================================================================
+
+Base = declarative_base()
+
+# ============================================================================
+# DATABASE EVENT LISTENERS
+# ============================================================================
+
+
+@event.listens_for(engine, "connect")
+def receive_connect(dbapi_connection, connection_record):
+    """Enable foreign keys on SQLite connections"""
+    # This is for SQLite only, PostgreSQL has them enabled by default
+    pass
+
+
+@event.listens_for(engine, "pool_pre_ping")
+def receive_pool_pre_ping(dbapi_conn, connection_record, connection_proxy):
+    """Verify connections before checkout from pool"""
+    # SQLAlchemy will handle this with pool_pre_ping=True
+    pass
+
+# ============================================================================
+# DEPENDENCY INJECTION
+# ============================================================================
+
+
+def get_db() -> Generator[Session, None, None]:
+    """
+    Dependency for getting database session.
+    Yields a session and ensures cleanup after use.
+
+    Usage in FastAPI routes:
+        def my_endpoint(db: Session = Depends(get_db)):
+            ...
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Database session error: {e}")
+        raise
+    finally:
+        db.close()
+
+
+# ============================================================================
+# DATABASE INITIALIZATION
+# ============================================================================
+
+
+def init_db() -> None:
+    """
+    Initialize database by creating all tables.
+    Run this once at application startup.
+    """
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+
+
+def close_db() -> None:
+    """
+    Close database connections.
+    Run this at application shutdown.
+    """
+    try:
+        engine.dispose()
+        logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error closing database: {e}")
+        raise
+
+# ============================================================================
+# HEALTH CHECK
+# ============================================================================
+
+
+def check_db_connection() -> bool:
+    """
+    Check if database connection is healthy.
+
+    Returns:
+        bool: True if connection is healthy, False otherwise
+    """
+    try:
+        with engine.connect() as connection:
+            result = connection.execute("SELECT 1")
+            return result is not None
+    except Exception as e:
+        logger.error(f"Database connection check failed: {e}")
+        return False

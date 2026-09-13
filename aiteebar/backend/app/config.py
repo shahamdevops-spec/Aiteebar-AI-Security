@@ -1,0 +1,170 @@
+"""
+Configuration management for Aiteebar AI Security FastAPI application.
+Uses Pydantic Settings for environment variable loading and validation.
+"""
+
+from functools import lru_cache
+from typing import Optional, List
+from pydantic_settings import BaseSettings
+from pydantic import Field, validator
+
+
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables"""
+
+    # ========================================================================
+    # APPLICATION SETTINGS
+    # ========================================================================
+
+    app_name: str = Field(default="Aiteebar AI Security API", env="APP_NAME")
+    app_version: str = Field(default="0.1.0", env="APP_VERSION")
+    environment: str = Field(default="development", env="ENVIRONMENT")
+    debug: bool = Field(default=True, env="DEBUG")
+
+    # ========================================================================
+    # SERVER SETTINGS
+    # ========================================================================
+
+    backend_host: str = Field(default="0.0.0.0", env="BACKEND_HOST")
+    backend_port: int = Field(default=8000, env="BACKEND_PORT")
+    backend_workers: int = Field(default=4, env="BACKEND_WORKERS")
+
+    # ========================================================================
+    # DATABASE SETTINGS
+    # ========================================================================
+
+    database_url: str = Field(
+        default="postgresql://aiteebar:aiteebar_password@localhost:5432/aiteebar_db",
+        env="DATABASE_URL"
+    )
+    database_pool_size: int = Field(default=5, env="DATABASE_POOL_SIZE")
+    database_max_overflow: int = Field(default=10, env="DATABASE_MAX_OVERFLOW")
+    database_pool_recycle: int = Field(default=3600, env="DATABASE_POOL_RECYCLE")
+    database_echo: bool = Field(default=False, env="DATABASE_ECHO")
+    database_pool_pre_ping: bool = Field(default=True, env="DATABASE_POOL_PRE_PING")
+
+    # ========================================================================
+    # JWT SETTINGS
+    # ========================================================================
+
+    jwt_secret_key: str = Field(
+        default="change-me-in-production-32-chars-min",
+        env="JWT_SECRET_KEY"
+    )
+    jwt_algorithm: str = Field(default="HS256", env="JWT_ALGORITHM")
+    jwt_expiration_hours: int = Field(default=24, env="JWT_EXPIRATION_HOURS")
+    refresh_token_expiration_days: int = Field(default=7, env="REFRESH_TOKEN_EXPIRATION_DAYS")
+
+    # ========================================================================
+    # CORS SETTINGS
+    # ========================================================================
+
+    cors_origins: List[str] = Field(
+        default=["http://localhost:3000", "http://localhost:3001"],
+        env="CORS_ORIGINS"
+    )
+    cors_credentials: bool = Field(default=True, env="CORS_CREDENTIALS")
+    cors_methods: List[str] = Field(default=["*"], env="CORS_METHODS")
+    cors_headers: List[str] = Field(default=["*"], env="CORS_HEADERS")
+
+    # ========================================================================
+    # SECURITY SETTINGS
+    # ========================================================================
+
+    encryption_key: str = Field(
+        default="your-encryption-key-32-chars-long",
+        env="ENCRYPTION_KEY"
+    )
+    password_min_length: int = Field(default=8, env="PASSWORD_MIN_LENGTH")
+
+    # ========================================================================
+    # API SETTINGS
+    # ========================================================================
+
+    api_version: str = Field(default="v1", env="API_VERSION")
+    api_docs_enabled: bool = Field(default=True, env="API_DOCS_ENABLED")
+    openapi_url: str = Field(default="/openapi.json", env="OPENAPI_URL")
+    docs_url: str = Field(default="/docs", env="DOCS_URL")
+    redoc_url: str = Field(default="/redoc", env="REDOC_URL")
+
+    # ========================================================================
+    # RATE LIMITING
+    # ========================================================================
+
+    rate_limit_requests: int = Field(default=1000, env="RATE_LIMIT_REQUESTS")
+    rate_limit_window_seconds: int = Field(default=3600, env="RATE_LIMIT_WINDOW_SECONDS")
+    rate_limit_burst: int = Field(default=50, env="RATE_LIMIT_BURST")
+
+    # ========================================================================
+    # LOGGING
+    # ========================================================================
+
+    log_level: str = Field(default="INFO", env="LOG_LEVEL")
+    log_format: str = Field(default="json", env="LOG_FORMAT")
+
+    # ========================================================================
+    # AI/ML SETTINGS
+    # ========================================================================
+
+    ollama_base_url: str = Field(default="http://localhost:11434", env="OLLAMA_BASE_URL")
+    ollama_model: str = Field(default="mistral", env="OLLAMA_MODEL")
+    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+    openai_model: str = Field(default="gpt-4", env="OPENAI_MODEL")
+
+    # ========================================================================
+    # FEATURE FLAGS
+    # ========================================================================
+
+    feature_api_docs: bool = Field(default=True, env="FEATURE_API_DOCS")
+    feature_health_check: bool = Field(default=True, env="FEATURE_HEALTH_CHECK")
+    feature_metrics: bool = Field(default=True, env="FEATURE_METRICS")
+
+    class Config:
+        """Pydantic Config"""
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
+
+    @validator("cors_origins", pre=True)
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from comma-separated string"""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
+
+    @validator("cors_methods", pre=True)
+    def parse_cors_methods(cls, v):
+        """Parse CORS methods from comma-separated string"""
+        if isinstance(v, str):
+            return [method.strip() for method in v.split(",")]
+        return v
+
+    @validator("cors_headers", pre=True)
+    def parse_cors_headers(cls, v):
+        """Parse CORS headers from comma-separated string"""
+        if isinstance(v, str):
+            return [header.strip() for header in v.split(",")]
+        return v
+
+    @property
+    def is_development(self) -> bool:
+        """Check if running in development"""
+        return self.environment == "development"
+
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production"""
+        return self.environment == "production"
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    """
+    Get cached settings instance.
+    Uses LRU cache to avoid reloading settings multiple times.
+    """
+    return Settings()
+
+
+# Export settings for import
+settings = get_settings()
