@@ -48,7 +48,30 @@ export default function LoginPage() {
   const handleDemoLogin = async (credentials: typeof DEMO_CREDENTIALS.ADMIN) => {
     setEmail(credentials.email)
     setPassword(credentials.password)
-    setShowDemoHint(false)
+    setError('')
+    setIsLoading(true)
+
+    try {
+      const response = await api.login(credentials.email, credentials.password)
+
+      if (response.data.access_token) {
+        setAccessToken(response.data.access_token)
+
+        try {
+          const userResponse = await api.getCurrentUser()
+          setCurrentUser(userResponse.data)
+        } catch (err) {
+          console.error('Failed to fetch user:', err)
+        }
+
+        router.push('/dashboard')
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.detail || 'Invalid credentials'
+      setError(errorMessage)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -104,10 +127,17 @@ export default function LoginPage() {
             {/* Submit button */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 rounded-lg transition-colors"
+              disabled={isLoading || !email || !password}
+              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-slate-700 disabled:to-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-all duration-200"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin">⏳</span>
+                  Signing in...
+                </span>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
         </Card>
