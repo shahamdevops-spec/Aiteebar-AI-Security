@@ -8,7 +8,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
 
 from app.config import settings
@@ -157,7 +157,7 @@ def decode_token(token: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthCredentials = Depends(security),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
     """
     Dependency to get current authenticated user from JWT token.

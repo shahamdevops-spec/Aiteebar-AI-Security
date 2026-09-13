@@ -36,11 +36,6 @@ engine = create_engine(
 
     # Echo SQL in development
     echo=settings.database_echo,
-
-    # Connection parameters
-    connect_args={
-        "connect_timeout": 10,
-    },
 )
 
 # ============================================================================
@@ -69,13 +64,6 @@ Base = declarative_base()
 def receive_connect(dbapi_connection, connection_record):
     """Enable foreign keys on SQLite connections"""
     # This is for SQLite only, PostgreSQL has them enabled by default
-    pass
-
-
-@event.listens_for(engine, "pool_pre_ping")
-def receive_pool_pre_ping(dbapi_conn, connection_record, connection_proxy):
-    """Verify connections before checkout from pool"""
-    # SQLAlchemy will handle this with pool_pre_ping=True
     pass
 
 # ============================================================================

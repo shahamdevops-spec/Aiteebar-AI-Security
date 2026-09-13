@@ -312,7 +312,7 @@ class AgentActivity(Base):
     risk_score = Column(Numeric(5, 2), default=0, index=True)
 
     # Detailed metadata
-    metadata = Column(JSONB, default={})
+    agent_metadata = Column(JSONB, default={})
 
     created_at = Column(DateTime(timezone=True), default=func.now(), nullable=False)
 
