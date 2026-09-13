@@ -10,10 +10,13 @@ from app.database import get_db
 from app.models import (
     AIApplication,
     AIAgent,
+    MCPTool,
+    RiskLevel,
     SecurityEvent,
     AgentActivity,
     DLPEvent,
     PolicyAction,
+    PolicyExecution,
 )
 from app.security import get_current_user
 
@@ -36,17 +39,18 @@ async def get_metrics(
     # Count total agents
     total_agents = db.query(func.count(AIAgent.id)).scalar() or 0
 
-    # Count high-risk applications (risk_level >= 65)
+    # risk_score is the 0-100 numeric field; risk_level is an enum label and
+    # cannot be compared against a number.
     high_risk_applications = (
         db.query(func.count(AIApplication.id))
-        .filter(AIApplication.risk_level >= 65)
+        .filter(AIApplication.risk_score >= 65)
         .scalar() or 0
     )
 
-    # Count critical agents (status = 'critical')
+    # AgentStatus has no "critical" member, so criticality comes from risk_level.
     critical_agents = (
         db.query(func.count(AIAgent.id))
-        .filter(AIAgent.status == "critical")
+        .filter(AIAgent.risk_level == RiskLevel.CRITICAL)
         .scalar() or 0
     )
 
@@ -58,23 +62,22 @@ async def get_metrics(
         .scalar() or 0
     )
 
-    # Count blocked actions (last 7 days)
+    # Count blocked actions (last 7 days). PolicyExecution is the audit row;
+    # PolicyAction is the enum of possible outcomes.
     blocked_actions = (
-        db.query(func.count(PolicyAction.id))
+        db.query(func.count(PolicyExecution.id))
         .filter(
             and_(
-                PolicyAction.action_type == "block",
-                PolicyAction.created_at >= seven_days_ago,
+                PolicyExecution.action_taken == PolicyAction.BLOCK,
+                PolicyExecution.created_at >= seven_days_ago,
             )
         )
         .scalar() or 0
     )
 
-    # Count MCP connections (agents with mcp_tools)
+    # Agents that have at least one MCP tool attached.
     mcp_connections = (
-        db.query(func.count(AIAgent.id))
-        .filter(AIAgent.mcp_tools.isnot(None))
-        .scalar() or 0
+        db.query(func.count(func.distinct(MCPTool.agent_id))).scalar() or 0
     )
 
     return {
@@ -98,15 +101,16 @@ async def get_risk_distribution(
 
     Returns count of applications in each risk level.
     """
-    # Define risk level ranges
-    low = db.query(func.count(AIApplication.id)).filter(AIApplication.risk_level < 25).scalar() or 0
+    # Banded on risk_score, the numeric field. risk_level is an enum label and
+    # comparing it to a number silently yields wrong counts rather than erroring.
+    low = db.query(func.count(AIApplication.id)).filter(AIApplication.risk_score < 25).scalar() or 0
     medium = db.query(func.count(AIApplication.id)).filter(
-        and_(AIApplication.risk_level >= 25, AIApplication.risk_level < 50)
+        and_(AIApplication.risk_score >= 25, AIApplication.risk_score < 50)
     ).scalar() or 0
     high = db.query(func.count(AIApplication.id)).filter(
-        and_(AIApplication.risk_level >= 50, AIApplication.risk_level < 75)
+        and_(AIApplication.risk_score >= 50, AIApplication.risk_score < 75)
     ).scalar() or 0
-    critical = db.query(func.count(AIApplication.id)).filter(AIApplication.risk_level >= 75).scalar() or 0
+    critical = db.query(func.count(AIApplication.id)).filter(AIApplication.risk_score >= 75).scalar() or 0
 
     return {
         "low": low,

@@ -2,6 +2,7 @@
 AI Applications API endpoints for browsing and managing AI applications catalog.
 """
 
+from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
@@ -38,7 +39,9 @@ class ApplicationResponse(BaseModel):
     api_available: bool
     data_residency: Optional[str]
     is_demo: bool
-    last_assessed: Optional[str]
+    # Column is DateTime; typing this as str made every row with a populated
+    # last_assessed fail response validation and 500 the whole list endpoint.
+    last_assessed: Optional[datetime]
 
     class Config:
         from_attributes = True

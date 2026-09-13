@@ -1,17 +1,20 @@
+// These must stay in step with DEMO_USERS in backend/scripts/seed_users.py.
+// A mismatch here is invisible until someone clicks a demo button and gets a
+// 401, which is exactly how this broke before.
 export const DEMO_CREDENTIALS = {
   ADMIN: {
     email: 'admin@aiteebar.ai',
-    password: 'Admin@123',
+    password: 'Demo@123',
     role: 'admin',
   },
   ANALYST: {
     email: 'analyst@aiteebar.ai',
-    password: 'Analyst@123',
+    password: 'Demo@123',
     role: 'analyst',
   },
   VIEWER: {
     email: 'viewer@aiteebar.ai',
-    password: 'Viewer@123',
+    password: 'Demo@123',
     role: 'viewer',
   },
 }

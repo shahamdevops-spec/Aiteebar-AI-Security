@@ -35,6 +35,12 @@ class DLPScanRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=100000, description="Text to scan")
     source: Optional[str] = Field(None, description="Source identifier (agent, api, etc)")
     scan_id: Optional[str] = Field(None, description="Optional scan correlation ID")
+    agent_id: Optional[str] = Field(
+        None,
+        description="Attribute detections to this agent and persist them as DLP "
+                    "events. Omit for an ad-hoc scan that returns results without "
+                    "writing to the database.",
+    )
 
     class Config:
         json_schema_extra = {

@@ -20,19 +20,19 @@ from app.security import hash_password
 DEMO_USERS = [
     {
         "email": "admin@aiteebar.ai",
-        "password": "Admin@123",
+        "password": "Demo@123",
         "name": "Admin User",
         "role": UserRole.ADMIN,
     },
     {
         "email": "analyst@aiteebar.ai",
-        "password": "Analyst@123",
+        "password": "Demo@123",
         "name": "Analyst User",
         "role": UserRole.ANALYST,
     },
     {
         "email": "viewer@aiteebar.ai",
-        "password": "Viewer@123",
+        "password": "Demo@123",
         "name": "Viewer User",
         "role": UserRole.VIEWER,
     },

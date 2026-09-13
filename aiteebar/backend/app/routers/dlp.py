@@ -77,11 +77,13 @@ async def scan_text(request: DLPScanRequest, db: Session = Depends(get_db)):
         # Get unique data types found
         data_types_found = list(set(d.data_type.value for d in detections))
 
-        # If violations found, log to database
-        if detections:
+        # Persist only when the caller attributed the scan to an agent.
+        # DLPEvent.agent_id is NOT NULL, so an unattributed ad-hoc scan cannot
+        # be logged; it still returns its detections to the caller.
+        if detections and request.agent_id:
             for detection in detections:
                 dlp_event = DLPEvent(
-                    agent_id=None,  # Will be set by calling service
+                    agent_id=request.agent_id,
                     data_type=detection.data_type.value if hasattr(detection.data_type, 'value') else str(detection.data_type),
                     severity=_severity_to_enum(detection.severity.value if hasattr(detection.severity, 'value') else str(detection.severity)),
                     confidence=detection.confidence,
