@@ -11,8 +11,8 @@ import RecommendedControls from '@/components/risk/RecommendedControls';
 import Loading from '@/components/common/Loading';
 
 export default function RiskAssessmentPage() {
-  const params = useParams();
-  const applicationId = params.id as string;
+  const params = useParams() as { id: string };
+  const applicationId = params?.id || '';
 
   const [riskAssessment, setRiskAssessment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
