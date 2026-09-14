@@ -17,26 +17,32 @@ logger = logging.getLogger(__name__)
 # DATABASE ENGINE CONFIGURATION
 # ============================================================================
 
-# Determine pool class based on environment
-if settings.is_development:
-    pool_class = QueuePool
+# SQLite (used for zero-install local development) does not use a server-side
+# connection pool and needs check_same_thread disabled so FastAPI's worker
+# threads can share the connection. PostgreSQL keeps the tuned QueuePool.
+is_sqlite = settings.database_url.startswith("sqlite")
+
+if is_sqlite:
+    engine = create_engine(
+        settings.database_url,
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=settings.database_pool_pre_ping,
+        echo=settings.database_echo,
+    )
 else:
-    pool_class = QueuePool
+    engine = create_engine(
+        settings.database_url,
 
-# Create SQLAlchemy engine with connection pooling
-engine = create_engine(
-    settings.database_url,
+        # Connection pooling
+        poolclass=QueuePool,
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_max_overflow,
+        pool_recycle=settings.database_pool_recycle,
+        pool_pre_ping=settings.database_pool_pre_ping,
 
-    # Connection pooling
-    poolclass=pool_class,
-    pool_size=settings.database_pool_size,
-    max_overflow=settings.database_max_overflow,
-    pool_recycle=settings.database_pool_recycle,
-    pool_pre_ping=settings.database_pool_pre_ping,
-
-    # Echo SQL in development
-    echo=settings.database_echo,
-)
+        # Echo SQL in development
+        echo=settings.database_echo,
+    )
 
 # ============================================================================
 # SESSION FACTORY

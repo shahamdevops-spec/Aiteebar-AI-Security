@@ -3,10 +3,11 @@ Configuration management for Aiteebar AI Security FastAPI application.
 Uses Pydantic Settings for environment variable loading and validation.
 """
 
+import json
 from functools import lru_cache
 from typing import Optional, List
 from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -59,13 +60,18 @@ class Settings(BaseSettings):
     # CORS SETTINGS
     # ========================================================================
 
-    cors_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:3001"],
-        env="CORS_ORIGINS"
+    # Stored as raw strings so a plain comma-separated .env value (the format the
+    # setup docs use, e.g. CORS_ORIGINS=http://localhost:3000,http://localhost:3001)
+    # loads cleanly. pydantic-settings tries to JSON-decode a List[str] env value
+    # and would crash on the comma-separated form. The parsed lists are exposed via
+    # the cors_origins / cors_methods / cors_headers properties defined below.
+    cors_origins_raw: str = Field(
+        default="http://localhost:3000,http://localhost:3001",
+        validation_alias="CORS_ORIGINS"
     )
     cors_credentials: bool = Field(default=True, env="CORS_CREDENTIALS")
-    cors_methods: List[str] = Field(default=["*"], env="CORS_METHODS")
-    cors_headers: List[str] = Field(default=["*"], env="CORS_HEADERS")
+    cors_methods_raw: str = Field(default="*", validation_alias="CORS_METHODS")
+    cors_headers_raw: str = Field(default="*", validation_alias="CORS_HEADERS")
 
     # ========================================================================
     # SECURITY SETTINGS
@@ -127,7 +133,7 @@ class Settings(BaseSettings):
     # Email delivery
     alert_email_enabled: bool = Field(default=False, env="ALERT_EMAIL_ENABLED")
     alert_email_from: str = Field(default="soc@aiteebar.ai", env="ALERT_EMAIL_FROM")
-    alert_email_recipients: List[str] = Field(default=[], env="ALERT_EMAIL_RECIPIENTS")
+    alert_email_recipients_raw: str = Field(default="", validation_alias="ALERT_EMAIL_RECIPIENTS")
     smtp_host: Optional[str] = Field(default=None, env="SMTP_HOST")
     smtp_port: int = Field(default=587, env="SMTP_PORT")
     smtp_username: Optional[str] = Field(default=None, env="SMTP_USERNAME")
@@ -146,34 +152,51 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        # Ignore unrelated keys that commonly share a .env (e.g. BACKEND_DEBUG,
+        # frontend NEXT_PUBLIC_* vars) instead of raising "extra inputs are not
+        # permitted" and crashing startup.
+        extra = "ignore"
 
-    @validator("cors_origins", pre=True)
-    def parse_cors_origins(cls, v):
-        """Parse CORS origins from comma-separated string"""
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.split(",")]
-        return v
+    @staticmethod
+    def _parse_list(value) -> List[str]:
+        """Parse a list from an env value.
 
-    @validator("cors_methods", pre=True)
-    def parse_cors_methods(cls, v):
-        """Parse CORS methods from comma-separated string"""
-        if isinstance(v, str):
-            return [method.strip() for method in v.split(",")]
-        return v
+        Accepts a JSON array (e.g. ["a","b"]) or a plain comma-separated
+        string (e.g. a,b). Returns [] for an empty value.
+        """
+        if isinstance(value, (list, tuple)):
+            return [str(item).strip() for item in value]
+        if not value:
+            return []
+        text = str(value).strip()
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+                if isinstance(parsed, list):
+                    return [str(item).strip() for item in parsed]
+            except ValueError:
+                pass
+        return [item.strip() for item in text.split(",") if item.strip()]
 
-    @validator("cors_headers", pre=True)
-    def parse_cors_headers(cls, v):
-        """Parse CORS headers from comma-separated string"""
-        if isinstance(v, str):
-            return [header.strip() for header in v.split(",")]
-        return v
+    @property
+    def cors_origins(self) -> List[str]:
+        """Allowed CORS origins as a list."""
+        return self._parse_list(self.cors_origins_raw)
 
-    @validator("alert_email_recipients", pre=True)
-    def parse_alert_recipients(cls, v):
-        """Parse alert recipients from comma-separated string"""
-        if isinstance(v, str):
-            return [addr.strip() for addr in v.split(",") if addr.strip()]
-        return v
+    @property
+    def cors_methods(self) -> List[str]:
+        """Allowed CORS methods as a list."""
+        return self._parse_list(self.cors_methods_raw)
+
+    @property
+    def cors_headers(self) -> List[str]:
+        """Allowed CORS headers as a list."""
+        return self._parse_list(self.cors_headers_raw)
+
+    @property
+    def alert_email_recipients(self) -> List[str]:
+        """SOC alert email recipients as a list."""
+        return self._parse_list(self.alert_email_recipients_raw)
 
     @property
     def is_development(self) -> bool:

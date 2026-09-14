@@ -50,9 +50,9 @@ Services startup times:
 ### Step 5: Login with Demo Credentials
 
 ```
-Admin:     admin@aiteebar.ai      / Admin@123
-Analyst:   analyst@aiteebar.ai    / Analyst@123
-Viewer:    viewer@aiteebar.ai     / Viewer@123
+Admin:     admin@aiteebar.ai      / Demo@123
+Analyst:   analyst@aiteebar.ai    / Demo@123
+Viewer:    viewer@aiteebar.ai     / Demo@123
 ```
 
 ### Step 6: View Logs
@@ -144,6 +144,18 @@ source venv/bin/activate
 #### 3. Create .env File
 
 Create `backend/.env`:
+
+> **No PostgreSQL? Use SQLite (zero install).** For local development you can skip
+> installing PostgreSQL entirely by pointing `DATABASE_URL` at a SQLite file. The app
+> creates its tables automatically on first run. Just use this one line as your whole
+> `backend/.env`:
+>
+> ```env
+> DATABASE_URL=sqlite:///./aiteebar.db
+> ```
+>
+> Then run `python scripts/init_db.py` and `python scripts/seed_users.py`, and start the
+> server. Everything else below (PostgreSQL) is the alternative for a production-like setup.
 
 ```env
 # Database
