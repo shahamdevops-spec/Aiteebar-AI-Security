@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import '../styles/globals.css'
 
 export const metadata: Metadata = {
-  title: 'Aiteebar AI Security',
+  title: 'Eitemaad AI Security',
   description: 'AI-powered security analysis and threat intelligence platform',
   keywords: ['security', 'AI', 'threat detection', 'vulnerability assessment'],
   viewport: 'width=device-width, initial-scale=1',
   openGraph: {
-    title: 'Aiteebar AI Security',
+    title: 'Eitemaad AI Security',
     description: 'AI-powered security analysis and threat intelligence platform',
     type: 'website',
   },

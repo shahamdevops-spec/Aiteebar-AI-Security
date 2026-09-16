@@ -56,7 +56,7 @@ export default function Home() {
               <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-cyan-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">🔒</span>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">Aiteebar</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">Eitemaad</h1>
             </div>
             <div className="flex gap-4">
               <Link
@@ -182,7 +182,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div>
-              <h4 className="font-bold text-blue-300 mb-4">About Aiteebar</h4>
+              <h4 className="font-bold text-blue-300 mb-4">About Eitemaad</h4>
               <p className="text-slate-400 text-sm">Advanced AI security intelligence platform protecting your infrastructure.</p>
             </div>
             <div>
@@ -199,7 +199,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-blue-900/30 pt-8 text-center text-slate-400">
-            <p>&copy; 2024 Aiteebar AI Security. All rights reserved.</p>
+            <p>&copy; 2024 Eitemaad AI Security. All rights reserved.</p>
           </div>
         </div>
       </footer>

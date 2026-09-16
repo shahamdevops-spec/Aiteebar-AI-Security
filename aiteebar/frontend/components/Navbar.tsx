@@ -22,7 +22,7 @@ export function Navbar({ user, onLogout }: NavbarProps) {
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="text-2xl font-bold text-blue-400">🔒</div>
-            <span className="text-xl font-bold text-slate-100">Aiteebar</span>
+            <span className="text-xl font-bold text-slate-100">Eitemaad</span>
           </Link>
 
           {/* Right side */}
