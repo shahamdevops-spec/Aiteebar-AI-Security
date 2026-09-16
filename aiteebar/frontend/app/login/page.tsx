@@ -80,7 +80,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-4">🔒</div>
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">Aiteebar</h1>
+          <h1 className="text-4xl font-bold text-slate-100 mb-2">Eitemaad</h1>
           <p className="text-slate-400">AI-Powered Security Intelligence</p>
         </div>
 
